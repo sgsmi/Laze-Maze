@@ -10,7 +10,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "prestart": "npm run copy",
     "start": "live-server public --port=3000",
-    "copy": "copyfiles -u 1 src/index.js public/js && copyfiles -u 2 src/js/*.js public/js && copyfiles -u 2 src/css/*.css public/css",
+    "copy": "copyfiles -u 2 src/js/*.js public/js && copyfiles -u 2 src/css/*.css public/css",
     "build": "npm run copy && cp -R public/* dist/"
   },
   "repository": {

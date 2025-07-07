@@ -1,16 +1,17 @@
-#mazeCanvas {
-    width: 100%;
-    max-width: 600px;
-    aspect-ratio: 1;
-    background: #999;  /* or whatever */
-}
 #grid {
     display: grid;
-    grid-template-columns: repeat(10, 1fr);
+    grid-gap: 1px;  /* Adds a gap between cells */
     width: 100%;
     max-width: 600px;
     aspect-ratio: 1;
     margin: 0 auto;
+    background: #999;
+}
+#beamCanvas {
+    width: 100%;
+    max-width: 600px;
+    aspect-ratio: 1;
+    background: transparent;  /* or whatever */
 }
 .cell {
     border: 1px solid #444;
