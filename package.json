@@ -1,0 +1,25 @@
+{
+  "name": "laze-maze",
+  "version": "1.0.0",
+  "description": "A browser-based puzzle where you place mirrors on a grid to guide a laser to its targets.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "live-server public --port=3000",
+    "build": "cp -R public/* dist/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sgsmi/Laze-Maze.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sgsmi/Laze-Maze/issues"
+  },
+  "homepage": "https://github.com/sgsmi/Laze-Maze#readme"
+}
