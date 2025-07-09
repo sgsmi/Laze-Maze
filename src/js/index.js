@@ -1,24 +1,44 @@
-import { createGrid }      from './grid.js';
-import { syncCanvasSize, onResize, drawBeam } from './beam.js';
-import { debounce } from './utils.js';
+import { createGrid }  from './grid.js';
+import { syncCanvasSize, traceBeam, onResize } from './beam.js';
+import { debounce }    from './utils.js';
+import { levels }      from './levels.js';
 
-window.addEventListener('resize', debounce(onResize, 100));
+let currentLevel = 0;
+
+function loadLevel(idx) {
+    const { rows, cols, layout } = levels[idx];
+    const gridEl    = document.getElementById('grid');
+    gridEl.innerHTML = '';             // clear old
+    createGrid(gridEl, rows, cols, layout);
+
+    // canvas setup:
+    const beamCanvas = document.getElementById('beamCanvas');
+    const ctx        = beamCanvas.getContext('2d');
+    syncCanvasSize(beamCanvas);
+    traceBeam(ctx, rows, cols);
+}
 
 document.addEventListener('DOMContentLoaded', () => {
-
-    const gridEl    = document.getElementById('grid');
-    const ROWS      = 11, COLS = 11;
-    createGrid(gridEl, ROWS, COLS);
-
+    const { rows, cols } = levels[currentLevel];
     const beamCanvas = document.getElementById('beamCanvas');
-    const bctx       = beamCanvas.getContext('2d');
+    const ctx        = beamCanvas.getContext('2d');
 
+    // Initial draw
     syncCanvasSize(beamCanvas);
-    drawBeam( bctx, beamCanvas.width / 2, beamCanvas.height, beamCanvas.width / 2, beamCanvas.height / 2);
+    traceBeam(ctx, rows, cols);
 
-    gridEl.addEventListener('click', e => {
-        const cell = e.target.closest('.cell');
-        if (!cell) return;
-        // mirror-placement logic will go here
+    // Create the grid
+    loadLevel(currentLevel);
+
+    // Single resize listener
+    window.addEventListener(
+        'resize',
+        debounce(() => onResize(ctx, rows, cols), 100)
+    );
+
+    // Click handler re-draws beam
+    document.getElementById('grid').addEventListener('click', e => {
+        // …update your cell.dataset.type…
+        traceBeam(ctx, rows, cols);
     });
 });

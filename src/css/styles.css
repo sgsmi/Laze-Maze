@@ -22,3 +22,13 @@
     transform: scale(1.05);
     z-index: 1;
 }
+.cell[data-type="target"] {
+  background: gold;
+}
+.cell[data-type="bomb"] {
+  background: orange;
+}
+.cell[data-type="wall"] {
+  background: brown;
+}
+

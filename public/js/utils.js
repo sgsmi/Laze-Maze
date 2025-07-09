@@ -5,3 +5,9 @@ export function debounce(fn, delay) {
         timer = setTimeout(() => fn(...args), delay);
     };
 }
+
+export function getCellDimensions(el, cols, rows) {
+  const width  = el.clientWidth  / cols;
+  const height = el.clientHeight / rows;
+  return { cellWidth: width, cellHeight: height };
+}
