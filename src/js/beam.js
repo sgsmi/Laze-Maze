@@ -1,9 +1,22 @@
 import { getCellDimensions } from './utils.js';
 
 export function syncCanvasSize(canvas) {
-  canvas.width  = canvas.clientWidth;
-  canvas.height = canvas.clientHeight;
+    canvas.width  = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
 }
+
+let t = 0;
+export function animateBeam(ctx, rows, cols) {
+  t += 0.05;
+  // pulse between 1px and 4px:
+  ctx.lineWidth = 2 + Math.sin(t) * 1.5;
+  // cycle hue:
+  const hue = (t * 20) % 360;
+  ctx.strokeStyle = `hsl(${hue}, 100%, 50%)`;
+  traceBeam(ctx, rows, cols);
+  requestAnimationFrame(() => animateBeam(ctx, rows, cols));
+}
+
 
 /**
      * Trace and draw the laser beam, stopping at the first wall cell.
@@ -16,42 +29,92 @@ export function syncCanvasSize(canvas) {
     // Determine each cell’s pixel dimensions
     const { cellWidth, cellHeight } = getCellDimensions(ctx.canvas, cols, rows);
 
-    // Beam starts at middle column, just above the first row
-    const midCol   = Math.floor(cols / 2);
-    let endRow     = rows;  // default to off-canvas if no wall is hit
+    const startEl = document.querySelector('.cell[data-type="start"]');
+      if (!startEl) {
+        console.warn('No start cell found!');
+        return;
+      }
+      const startRow = Number(startEl.dataset.row);
+      const startCol = Number(startEl.dataset.col);
+      
+      let dr = 0, dc = 0;
+      switch (startEl.dataset.direction) {
+        case 'D': dr = 1; break;
+        case 'U': dr = -1; break;
+        case 'R': dc = 1; break;
+        case 'L': dc = -1; break;
+        default: dr = 1;
+      }
 
     // March down each grid row until a wall blocks the beam
-    for (let r = 0; r < rows; r++) {
-        const cell = document.querySelector(
-        `.cell[data-row="${r}"][data-col="${midCol}"]`
-        );
-        const selector = `.cell[data-row="${r}"][data-col="${midCol}"]`;
+    let r = startRow, c = startCol;
+      while (r >= 0 && r < rows && c >= 0 && c < cols) {
+        const cell = document.querySelector(`.cell[data-row="${r}"][data-col="${c}"]`);
+        const selector = `.cell[data-row="${r}"][data-col="${c}"]`;
         console.log('Looking for', selector, '→', document.querySelector(selector));
         console.log(r, selector, cell);
-        
+
         if (!cell) {
-            // nothing to check—skip to next row
+            r += dr;
+            c += dc;
             continue;
         }
-        if (cell.dataset.type === 'wall') {
-            endRow = r;
-            break;
-        }
-    }
+
+        switch (cell.dataset.type) {
+            case 'wall':
+                endRow = r;
+                break;
+            case 'mirror-slash':
+                endRow = r;
+                // TODO: reflect direction via slash‐mirror logic
+                console.log('Slash mirror hit at row', r, 'column', c);
+                break;
+            case 'mirror-backslash':
+                endRow = r;
+                // TODO: reflect direction via backslash‐mirror logic
+                console.log('Backslash mirror hit at row', r, 'column', c);
+                break;
+            case 'target':
+                // If we hit a target, we can stop here 
+                endRow = r;
+                // to-do: handle win condition, e.g. show a message / advance level
+                console.log('Target hit at row', r, 'column', c);
+                break;
+            case 'portal':
+                // If we hit a portal, we can stop here
+                endRow = r;
+                // to-do: handle portal logic, e.g. teleport beam to another location
+                console.log('Portal hit at row', r, 'column', c);
+                break;
+            case 'filter':
+                // If we hit a filter, continue down the beam
+                // to-do: handle filter logic, e.g. change beam color
+                console.log('Filter hit at row', r, 'column', c);
+                break;
+            case 'bomb':
+                // If we hit a bomb, we can stop here
+                endRow = r;
+                // to-do: handle bomb logic, e.g. show explosion effect
+                console.log('Bomb hit at row', r, 'column', c);
+                break;
+          }
+          r += dr;
+          c += dc;
+      }
+
+    
 
     // Convert grid coords to canvas pixels, centering in each cell
-    const startX = (midCol + 0.5) * cellWidth;
-    const startY = 0.5 * cellHeight;
-    const endX   = startX;
-    const endY   = (endRow + 0.5) * cellHeight;
+    const startX = (startCol + 0.5) * cellWidth;
+    const startY = (startRow + 0.5) * cellHeight;
+    const endX   = (c + 0.5) * cellWidth;
+    const endY   = (r + 0.5) * cellHeight;
 
     // Draw the beam segment
-    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
     ctx.beginPath();
     ctx.moveTo(startX, startY);
     ctx.lineTo(endX, endY);
-    ctx.strokeStyle = 'rgba(255, 255, 0, 0.8)';
-    ctx.lineWidth   = 2;
     ctx.stroke();
     }
 

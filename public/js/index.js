@@ -1,5 +1,5 @@
 import { createGrid }  from './grid.js';
-import { syncCanvasSize, traceBeam, onResize } from './beam.js';
+import { syncCanvasSize, traceBeam, onResize, animateBeam} from './beam.js';
 import { debounce }    from './utils.js';
 import { levels }      from './levels.js';
 
@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initial draw
     syncCanvasSize(beamCanvas);
-    traceBeam(ctx, rows, cols);
+    animateBeam(ctx, rows, cols);
 
     // Create the grid
     loadLevel(currentLevel);

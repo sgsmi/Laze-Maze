@@ -1,4 +1,3 @@
-import { levels } from './levels.js';
 import { getCellDimensions } from './utils.js';
 
 
@@ -8,9 +7,23 @@ function parseCellCode(code) {
   const [prefix, suffix] = code.split('-');
   switch (prefix) {
     case 'T': return { type: 'target' };
-    case 'P': return { type: 'portal', id: suffix };
-    case 'F': return { type: 'filter', color: suffix };
-    case 'B': return { type: 'bomb' };  // no suffix needed
+    case 'P': return { type: 'portal', id: suffix };    // e.g. 'P-A' for portal A, 'P-B' for portal B
+    case 'F': return { type: 'filter', color: suffix }; // e.g. 'F-R' for red filter, 'F-G' for green filter
+    case 'B': return { type: 'bomb' };                  // no suffix needed
+    case 'M':                                           // e.g. 'M-/' for / mirror, 'M-\\ for \ mirror
+        if (suffix === '/') 
+            return { type: 'mirror-slash' };
+        if (suffix === '\\') 
+            return { type: 'mirror-backslash' };
+        // if no suffix, fall back:
+        return { type: 'mirror-slash' };
+    case 'S':                                           // e.g. 'S-D' for start down, 'S-L' for start left
+        if (suffix === 'D') return { type: 'start', direction: 'down' };
+        if (suffix === 'L') return { type: 'start', direction: 'left  ' };
+        if (suffix === 'R') return { type: 'start', direction: 'right' };
+        if (suffix === 'U') return { type: 'start', direction: 'up' };
+        // if no suffix, fall back:
+        return { type: 'start', direction: 'down' }; // default to down
     default:  return { type: 'empty' };
   }
 }
@@ -23,10 +36,11 @@ export function createGrid(containerEl, rows, cols, layout) {
         cell.dataset.row = r;
         cell.dataset.col = c;
         const code = layout[r][c];                // e.g. '#', '.', 'T'
-        const { type, id, color } = parseCellCode(code);
+        const { type, id, color, direction} = parseCellCode(code);
         cell.dataset.type = type;
         if (id)    cell.dataset.portalId = id;
         if (color) cell.dataset.color = color;
+        if (direction) cell.dataset.direction = direction; // e.g. 'M-/' or 'M-\'
         containerEl.append(cell);
         if (r === 0 && c === 5) {
         console.log('Cell[0,5] code =', code, 'dataset →', cell.dataset);
