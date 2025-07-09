@@ -23,12 +23,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const beamCanvas = document.getElementById('beamCanvas');
     const ctx        = beamCanvas.getContext('2d');
 
+    // Create the grid
+    loadLevel(currentLevel);
+
     // Initial draw
     syncCanvasSize(beamCanvas);
     animateBeam(ctx, rows, cols);
-
-    // Create the grid
-    loadLevel(currentLevel);
 
     // Single resize listener
     window.addEventListener(
