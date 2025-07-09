@@ -1,44 +1,101 @@
-import { createGrid }  from './grid.js';
-import { syncCanvasSize, traceBeam, onResize, animateBeam} from './beam.js';
-import { debounce }    from './utils.js';
-import { levels }      from './levels.js';
+import { createGrid } from './grid.js';
+import { syncCanvasSize, traceBeam, onResize, animateBeam } from './beam.js';
+import { debounce } from './utils.js';
+import { levels } from './levels.js';
 
 let currentLevel = 0;
 
 function loadLevel(idx) {
-    const { rows, cols, layout } = levels[idx];
-    const gridEl    = document.getElementById('grid');
-    gridEl.innerHTML = '';             // clear old
-    createGrid(gridEl, rows, cols, layout);
-
-    // canvas setup:
-    const beamCanvas = document.getElementById('beamCanvas');
-    const ctx        = beamCanvas.getContext('2d');
-    syncCanvasSize(beamCanvas);
-    traceBeam(ctx, rows, cols);
+  const { rows, cols, layout } = levels[idx];
+  const gridEl = document.getElementById('grid');
+  gridEl.innerHTML = '';
+  createGrid(gridEl, rows, cols, layout);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    const { rows, cols } = levels[currentLevel];
-    const beamCanvas = document.getElementById('beamCanvas');
-    const ctx        = beamCanvas.getContext('2d');
+  const { rows, cols } = levels[currentLevel];
+  const gridEl    = document.getElementById('grid');
+  const beamCanvas= document.getElementById('beamCanvas');
+  const ctx       = beamCanvas.getContext('2d');
+  const overlay   = document.getElementById('overlay');
+  const cancelBtn = document.getElementById('cancelPlacement');
 
-    // Initial draw
-    syncCanvasSize(beamCanvas);
-    animateBeam(ctx, rows, cols);
+  // INITIAL SETUP
+  loadLevel(currentLevel);
+  syncCanvasSize(beamCanvas);
+  animateBeam(ctx, rows, cols);
+  window.addEventListener('resize', debounce(() => onResize(ctx, rows, cols), 100));
 
-    // Create the grid
-    loadLevel(currentLevel);
+  // MIRROR PLACEMENT STATE
+  let placingCell = null;
+  let previewType = null;
 
-    // Single resize listener
-    window.addEventListener(
-        'resize',
-        debounce(() => onResize(ctx, rows, cols), 100)
-    );
+  // Show overlay & cancel only during placement
+  function enterPlacement(cell) {
+    placingCell = cell;
+    previewType = null;
+    cell.classList.add('selected');
+    overlay.classList.remove('hidden');
+    cancelBtn.classList.remove('hidden');
+    overlay.addEventListener('mousemove', onMouseMove);
+    overlay.addEventListener('click', confirmPlacement);
+  }
+  function exitPlacement() {
+    if (placingCell) placingCell.classList.remove('selected','preview-slash','preview-backslash');
+    placingCell = null;
+    previewType = null;
+    overlay.classList.add('hidden');
+    cancelBtn.classList.add('hidden');
+    overlay.removeEventListener('mousemove', onMouseMove);
+    overlay.removeEventListener('click', confirmPlacement);
+  }
 
-    // Click handler re-draws beam
-    document.getElementById('grid').addEventListener('click', e => {
-        // …update your cell.dataset.type…
-        traceBeam(ctx, rows, cols);
-    });
+  // MOUSEMOVE over overlay to update preview
+  function onMouseMove(e) {
+    if (!placingCell) return;
+    const rect = placingCell.getBoundingClientRect();
+    const xRel = e.clientX - rect.left, yRel = e.clientY - rect.top;
+    const slash = (xRel < rect.width/2 && yRel < rect.height/2)
+               || (xRel > rect.width/2 && yRel > rect.height/2);
+    const type = slash ? 'mirror-slash' : 'mirror-backslash';
+    if (type !== previewType) {
+        placingCell.classList.toggle('preview-slash', slash);
+        placingCell.classList.toggle('preview-backslash', !slash);
+        previewType = type;
+    }
+  }
+
+  // CLICK on overlay confirms placement
+  function confirmPlacement() {
+    if (!placingCell || !previewType) return;
+    placingCell.dataset.type = previewType;
+    exitPlacement();
+    traceBeam(ctx, rows, cols);
+  }
+
+  // CLICK on cancel aborts
+  cancelBtn.addEventListener('click', exitPlacement);
+
+  // CLICK on grid: either start placement or just redraw beam
+  gridEl.addEventListener('click', e => {
+    const cell = e.target.closest('.cell');
+    if (!cell) return;
+
+    // If in placement, ignore grid clicks (overlay is above)
+    if (placingCell) return;
+
+    if (cell.dataset.type === 'mirror-slash' || cell.dataset.type === 'mirror-backslash') {
+      cell.dataset.type = 'empty';
+      traceBeam(ctx, rows, cols);
+      return;
+    }
+
+    // Only start placement on empty cells
+    if (cell.dataset.type === 'empty') {
+      enterPlacement(cell);
+    } else {
+      // just redraw beam on non-empty clicks
+      traceBeam(ctx, rows, cols);
+    }
+  });
 });

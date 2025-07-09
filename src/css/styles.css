@@ -1,159 +1,218 @@
 #grid {
-    display: grid;
-    grid-gap: 1px;  
-    width: 100%;
-    max-width: 600px;
-    aspect-ratio: 1;
-    margin: 0 auto;
-    background: #6b6b6b;
-    position: relative;
+  display: grid;
+  grid-gap: 1px;  
+  width: 100%;
+  max-width: 600px;
+  aspect-ratio: 1;
+  margin: 0 auto;
+  background: #6b6b6b;
+  position: relative;
 }
 #beamCanvas {
-    width: 100%;
-    max-width: 600px;
-    aspect-ratio: 1;
-    background: transparent;
-    position: absolute;
-    top: 0; left: 0;
-    pointer-events: none;
+  width: 100%;
+  max-width: 600px;
+  aspect-ratio: 1;
+  background: transparent;
+  position: absolute;
+  top: 0; left: 0;
+  pointer-events: none;
 }
 .cell {
-    position: relative;
-    background: #c2c2c2;
-    overflow: hidden;
-    transition: 0.2s, transform 0.1s;
+  position: relative;
+  background: #c2c2c2;
+  overflow: hidden;
+  transition: 0.2s, transform 0.1s;
 }
 .cell:hover {
-    background: rgb(100,167,100);
-    transform: scale(1.05);
-    z-index: 1;
+  background: rgb(100,167,100);
+  transform: scale(1.05);
+  z-index: 1;
 }
 
 /* WALL (solid block) */
 .cell[data-type="wall"] {
-    background: #444;
-    pointer-events: none;
+  background: #444;
+  pointer-events: none;
 }
 
 /* TARGET (gold star) */
 .cell[data-type="target"] {
-    background: #222;
+  background: #222;
 }
 .cell[data-type="target"]::before {
-    content: "★";
-    position: absolute;
-    font-size: 1.5em;
-    color: gold;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
+  content: "★";
+  position: absolute;
+  font-size: 1.5em;
+  color: gold;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
 }
 
 /* BOMB (circle with fuse) */
 .cell[data-type="bomb"] {
-    background: darkred;
+  background: darkred;
 }
 .cell[data-type="bomb"]::before {
-    content: "";
-    position: absolute;
-    width: 60%;
-    height: 60%;
-    border-radius: 50%;
-    background: radial-gradient(circle at 30% 30%, #ccc, #333);
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
+  content: "";
+  position: absolute;
+  width: 60%;
+  height: 60%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #ccc, #333);
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
 }
 .cell[data-type="bomb"]::after {
-    content: "";
-    position: absolute;
-    width: 4px; height: 20px;
-    background: #fff;
-    top: 10%;
-    left: 50%;
-    transform: translateX(-50%) rotate(45deg);
-    border-radius: 2px;
+  content: "";
+  position: absolute;
+  width: 4px; height: 20px;
+  background: #fff;
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  border-radius: 2px;
 }
 
 /* MIRRORS */
 .cell[data-type="mirror-slash"]::before,
 .cell[data-type="mirror-backslash"]::before {
-    content: "";
-    position: absolute;
-    width: 5px;
-    height: 120%;
-    background: linear-gradient( to right, #333, #eee );
-    top: -10%;
-    left: 50%;
+  content: "";
+  position: absolute;
+  width: 5px;
+  height: 120%;
+  background: linear-gradient( to right, #333, #eee );
+  top: -10%;
+  left: 50%;
 }
 .cell[data-type="mirror-slash"]::before {
-    transform: translateX(-50%) rotate(45deg);
+  transform: translateX(-50%) rotate(45deg);
 }
 .cell[data-type="mirror-backslash"]::before {
-    transform: translateX(-50%) rotate(-45deg);
+  transform: translateX(-50%) rotate(-45deg);
 }
 
 /* PORTALS - use data-portal-id="A" or "B" */
 .cell[data-type="portal"] {
-    background: #222;
+  background: #222;
 }
 .cell[data-type="portal"]::before {
-    content: attr(data-portal-id);
-    position: absolute;
-    font-size: 1.2em;
-    font-weight: bold;
-    color: #fff;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    text-shadow: 0 0 5px cyan;
+  content: attr(data-portal-id);
+  position: absolute;
+  font-size: 1.2em;
+  font-weight: bold;
+  color: #fff;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  text-shadow: 0 0 5px cyan;
 }
 
 /* FILTERS - use data-color="R", "G", or "B" */
 .cell[data-type="filter"][data-color="R"] {
-    background: rgba(255,0,0,0.2);
+  background: rgba(255,0,0,0.2);
 }
 .cell[data-type="filter"][data-color="G"] {
-    background: rgba(0,255,0,0.2);
+  background: rgba(0,255,0,0.2);
 }
 .cell[data-type="filter"][data-color="B"] {
-    background: rgba(0,0,255,0.2);
+  background: rgba(0,0,255,0.2);
 }
 .cell[data-type="filter"]::after {
-    content: "";
-    position: absolute;
-    width: 40%;
-    height: 40%;
-    border: 2px solid currentColor;
-    border-radius: 50%;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    opacity: 0.7;
+  content: "";
+  position: absolute;
+  width: 40%;
+  height: 40%;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0.7;
 }
 
 /* START CELL styling */
 .cell[data-type="start"] {
-    background: #222;
+  background: #222;
+  position: relative;
 }
 .cell[data-type="start"]::before {
-    content: "";
-    position: absolute;
-    width: 0;
-    height: 0;
-    border: 8px solid transparent;
-    /* base arrow points up; we’ll rotate it */
-    border-bottom-color: lime;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%) rotate(0deg);
+  content: "";
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 0; height: 0;
+  border: 8px solid transparent;      /* make a triangle base */
+  border-top-color: lime;             /* color the top border, so the triangle points down */
+  transform: translate(-50%, -50%) rotate(0deg);
 }
 
-/* Rotate based on data-direction */
+/* Now rotate for other directions */
 .cell[data-type="start"][data-direction="D"]::before {
-    transform: translate(-50%, -50%) rotate(180deg); /* arrow points down */
+  /* no rotation needed – base arrow now points down */
+  transform: translate(-50%, -50%) rotate(0deg);
 }
 .cell[data-type="start"][data-direction="U"]::before {
-    transform: translate(-50%, -50%) rotate(0deg);   /* arrow points up */
+  /* flip 180° to point up */
+  transform: translate(-50%, -50%) rotate(180deg);
 }
 .cell[data-type="start"][data-direction="R"]::before {
-    transform: translate(-50%, -50%) rotate(90deg);  /* arrow points right */
+  transform: translate(-50%, -50%) rotate(90deg);
 }
 .cell[data-type="start"][data-direction="L"]::before {
-    transform: translate(-50%, -50%) rotate(-90deg); /* arrow points left */
+  transform: translate(-50%, -50%) rotate(-90deg);
+}
+
+/* overlay dims the whole board */
+#overlay {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5);
+  z-index: 5;
+}
+
+/* hide utility */
+.hidden { display: none !important; }
+
+/* Cancel button styling */
+#cancelPlacement {
+  position: absolute;
+  top: 10px; right: 10px;
+  z-index: 10;
+  padding: 0.5em 1em;
+  background: #fff;
+  border: 1px solid #444;
+  cursor: pointer;
+}
+
+/* PREVIEW MIRRORS (ghosted slash/backslash) */
+.cell.preview-slash::before {
+  content: "";
+  position: absolute;
+  width: 5px;
+  height: 120%;
+  background: linear-gradient(to right, #333, #eee);
+  top: -10%;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  opacity: 0.5;
+  z-index: 20;
+}
+.cell.preview-backslash::before {
+  content: "";
+  position: absolute;
+  width: 5px;
+  height: 120%;
+  background: linear-gradient(to right, #333, #eee);
+  top: -10%;
+  left: 50%;
+  transform: translateX(-50%) rotate(-45deg);
+  opacity: 0.5;
+  z-index: 20;
+}
+
+/* Ensure overlay catches clicks and dims */
+#overlay {
+  pointer-events: all;      /* overlay now intercepts clicks */
+}
+
+.cell.selected {
+  z-index: 20;
 }
