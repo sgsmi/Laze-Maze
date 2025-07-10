@@ -107,7 +107,10 @@ export function traceBeam(ctx, rows, cols) {
 }
 
 // --- animated pulses rolling along the beam ---
+let animating = true;
+export function setAnimating(val) { animating = val; }
 export function animateBeam(ctx, rows, cols) {
+  if (!animating) return; // stop animation if not animating  
   syncCanvasSize(ctx.canvas);
   t += 2;  // bump speed
 

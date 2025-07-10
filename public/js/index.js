@@ -1,5 +1,9 @@
 import { createGrid } from './grid.js';
-import { syncCanvasSize, traceBeam, onResize, animateBeam } from './beam.js';
+import { syncCanvasSize, 
+         traceBeam, 
+         onResize, 
+         animateBeam,
+         setAnimating } from './beam.js';
 import { debounce } from './utils.js';
 import { levels } from './levels.js';
 
@@ -102,7 +106,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
   window.addEventListener('bomb-hit', () => {
-    // to-do: stop the animation loop
+    // stop the animation loop
+    setAnimating(false);
     // darken board
     overlay.classList.remove('hidden');
     // show game over
@@ -121,6 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const beamCanvas = document.getElementById('beamCanvas');
     const ctx        = beamCanvas.getContext('2d');
     syncCanvasSize(beamCanvas);
+    setAnimating(true); // re-enable animation
     animateBeam(ctx, rows, cols);
   });
 });

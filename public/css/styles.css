@@ -138,7 +138,7 @@
   position: absolute;
   top: 50%; left: 50%;
   width: 0; height: 0;
-  border: 8px solid transparent;      /* make a triangle base */
+  border: 8px solid transparent;        /* make a triangle base */
   border-top-color: lime;             /* color the top border, so the triangle points down */
   transform: translate(-50%, -50%) rotate(0deg);
 }
@@ -208,16 +208,14 @@
   z-index: 20;
 }
 
-/* Ensure overlay catches clicks and dims */
+/* Ensure overlay catches clicks */
 #overlay {
-  pointer-events: all;      /* overlay now intercepts clicks */
+  pointer-events: all;    
 }
 
 .cell.selected {
   z-index: 20;
 }
-
-/* existing #overlay dims the board */
 
 /* Game Over Modal styling */
 #gameOverModal {
@@ -227,7 +225,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 20;
+  z-index: 30;
 }
 
 #gameOverModal .modal-content {
@@ -246,6 +244,3 @@
   cursor: pointer;
   z-index: 100;
 }
-
-/* re-use your existing .hidden class */
-.hidden { display: none !important; }
