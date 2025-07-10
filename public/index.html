@@ -4,6 +4,13 @@
 
 <div id="grid-container" style="position: relative; width:100%;max-width:600px;aspect-ratio:1;">
   <div id="overlay" class="hidden"></div>
+  <!-- Game Over Modal -->
+<div id="gameOverModal" class="hidden">
+  <div class="modal-content">
+    <p>💥 Game Over!</p>
+    <button id="restartBtn">Restart Level</button>
+  </div>
+</div>
   <div id="grid"></div>
   <canvas id="beamCanvas"
           style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;">

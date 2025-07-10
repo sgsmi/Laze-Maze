@@ -1,3 +1,5 @@
+# UNDER CONSTRUCTION, CURRENTLY NOT LIVE
+
 # Laze Maze
 A browser-based puzzle where you place mirrors on a grid to guide a laser to its targets.
 
@@ -11,12 +13,18 @@ A browser-based puzzle where you place mirrors on a grid to guide a laser to its
 - **Rendering:** HTML5 Canvas
 - **Build Tools:** npm scripts (no bundler for simplicity)
 
-## Hosting & Access
-This project is designed as a purely client-side web game. You can host it on any static-file platform (e.g., GitHub Pages, Netlify, Vercel) without requiring a server:
+### Local (Development)
+1. Clone the repo: `git clone https://github.com/<sgsmi>/laze-maze.git`
+2. Install dependencies: `npm install`
+3. Run locally: `npm start`
+4. Open http://localhost:3000 in your browser.
 
-1. Push your `public/` directory to your hosting provider.
-2. Ensure `index.html` is the default served page.
-3. Share the live URL with others—no installation needed.
+### Static Hosting (Production)
+1. Build assets: `npm run build` (copies `public/` to `dist/`).
+2. Deploy the contents of `dist/` (or `public/` directly) to any static host:
+   - **GitHub Pages:** Push `public/` or `dist/` branch to `gh-pages`.
+   - **Netlify/Vercel:** Connect the repo, set publish directory to `public/`.
+3. No server required—share the live URL!
 
 ## Contributing
 See [CONTRIBUTING.md](.github/ISSUE_TEMPLATE/feature_request.md).

@@ -19,12 +19,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const ctx       = beamCanvas.getContext('2d');
   const overlay   = document.getElementById('overlay');
   const cancelBtn = document.getElementById('cancelPlacement');
+  const gameOverModal = document.getElementById('gameOverModal');
+  const restartBtn    = document.getElementById('restartBtn');
 
   // INITIAL SETUP
   loadLevel(currentLevel);
   syncCanvasSize(beamCanvas);
   animateBeam(ctx, rows, cols);
   window.addEventListener('resize', debounce(() => onResize(ctx, rows, cols), 100));
+
 
   // MIRROR PLACEMENT STATE
   let placingCell = null;
@@ -97,5 +100,27 @@ document.addEventListener('DOMContentLoaded', () => {
       // just redraw beam on non-empty clicks
       traceBeam(ctx, rows, cols);
     }
+  });
+  window.addEventListener('bomb-hit', () => {
+    // to-do: stop the animation loop
+    // darken board
+    overlay.classList.remove('hidden');
+    // show game over
+    gameOverModal.classList.remove('hidden');
+  });
+
+  restartBtn.addEventListener('click', () => {
+    // hide everything
+    overlay.classList.add('hidden');
+    gameOverModal.classList.add('hidden');
+
+    // reload this level from scratch
+    loadLevel(currentLevel);
+
+    // re‐start the beam animation
+    const beamCanvas = document.getElementById('beamCanvas');
+    const ctx        = beamCanvas.getContext('2d');
+    syncCanvasSize(beamCanvas);
+    animateBeam(ctx, rows, cols);
   });
 });

@@ -216,3 +216,36 @@
 .cell.selected {
   z-index: 20;
 }
+
+/* existing #overlay dims the board */
+
+/* Game Over Modal styling */
+#gameOverModal {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+}
+
+#gameOverModal .modal-content {
+  background: rgba(0,0,0,0.85);
+  color: white;
+  padding: 2em;
+  border-radius: 8px;
+  text-align: center;
+  z-index: 100;
+}
+
+#gameOverModal button {
+  margin-top: 1em;
+  padding: 0.5em 1em;
+  font-size: 1em;
+  cursor: pointer;
+  z-index: 100;
+}
+
+/* re-use your existing .hidden class */
+.hidden { display: none !important; }
