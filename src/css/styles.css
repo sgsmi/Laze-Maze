@@ -152,10 +152,10 @@
   /* flip 180° to point up */
   transform: translate(-50%, -50%) rotate(180deg);
 }
-.cell[data-type="start"][data-direction="R"]::before {
+.cell[data-type="start"][data-direction="L"]::before {
   transform: translate(-50%, -50%) rotate(90deg);
 }
-.cell[data-type="start"][data-direction="L"]::before {
+.cell[data-type="start"][data-direction="R"]::before {
   transform: translate(-50%, -50%) rotate(-90deg);
 }
 
@@ -242,5 +242,24 @@
   padding: 0.5em 1em;
   font-size: 1em;
   cursor: pointer;
+  z-index: 100;
+}
+
+#winModal {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 30;
+}
+
+#winModal .modal-content {
+  background: rgba(0,0,0,0.85);
+  color: white;
+  padding: 2em;
+  border-radius: 8px;
+  text-align: center;
   z-index: 100;
 }

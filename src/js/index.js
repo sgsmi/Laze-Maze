@@ -25,6 +25,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const cancelBtn = document.getElementById('cancelPlacement');
   const gameOverModal = document.getElementById('gameOverModal');
   const restartBtn    = document.getElementById('restartBtn');
+  const winModal     = document.getElementById('winModal');
+  const nextLevelBtn = document.getElementById('nextLevelBtn');
+  const replayBtn    = document.getElementById('replayBtn');
+  const levelsBtn    = document.getElementById('levelsBtn');
 
   // INITIAL SETUP
   loadLevel(currentLevel);
@@ -105,14 +109,30 @@ document.addEventListener('DOMContentLoaded', () => {
       traceBeam(ctx, rows, cols);
     }
   });
-  window.addEventListener('bomb-hit', () => {
-    // stop the animation loop
-    setAnimating(false);
-    // darken board
-    overlay.classList.remove('hidden');
-    // show game over
-    gameOverModal.classList.remove('hidden');
+
+  window.addEventListener('cell-hit', e => {
+    switch (e.detail.type) {
+      case 'bomb':
+        // stop the animation loop
+        setAnimating(false);
+        // darken board
+        overlay.classList.remove('hidden');
+        // show game over
+        gameOverModal.classList.remove('hidden');
+        break;
+      case 'target':
+        // stop the animation loop
+        setAnimating(false);
+        overlay.classList.remove('hidden');
+        winModal.classList.remove('hidden');
+        break;
+      case 'portal':
+        // teleport logic
+        break;
+      // etc…
+    }
   });
+
 
   restartBtn.addEventListener('click', () => {
     // hide everything
@@ -129,4 +149,35 @@ document.addEventListener('DOMContentLoaded', () => {
     setAnimating(true); // re-enable animation
     animateBeam(ctx, rows, cols);
   });
+
+  nextLevelBtn.addEventListener('click', () => {
+    overlay.classList.add('hidden');
+    winModal.classList.add('hidden');
+    if (currentLevel < levels.length - 1) {
+      currentLevel++;
+      startLevel();
+    }
+  });
+
+  replayBtn.addEventListener('click', () => {
+    overlay.classList.add('hidden');
+    winModal.classList.add('hidden');
+    startLevel();  // reload same level
+  });
+
+  levelsBtn.addEventListener('click', () => {
+    // TODO: show levels selector screen
+    showLevelsScreen();
+  });
+
+  function startLevel() {
+    exitPlacement();      // clear any mirror state
+    gameOverModal.classList.add('hidden');
+    winModal.classList.add('hidden');
+    overlay.classList.remove('active');
+    loadLevel(currentLevel);
+    setAnimating(true); // re-enable animation
+    syncCanvasSize(beamCanvas);
+    animateBeam(ctx, rows, cols);
+  }
 });

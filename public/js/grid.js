@@ -3,13 +3,13 @@ import { getCellDimensions } from './utils.js';
 
 function parseCellCode(code) {
   // e.g. code = 'P-A' or 'F-R' or '#'
-  if (code === '#') return { type: 'wall' };
   const [prefix, suffix] = code.split('-');
   switch (prefix) {
-    case 'T': return { type: 'target' };
+    case 'T': return { type: 'target' };                // no suffix needed
     case 'P': return { type: 'portal', id: suffix };    // e.g. 'P-A' for portal A, 'P-B' for portal B
     case 'F': return { type: 'filter', color: suffix }; // e.g. 'F-R' for red filter, 'F-G' for green filter
     case 'B': return { type: 'bomb' };                  // no suffix needed
+    case '#': return { type: 'wall' };                  // wall cell, no suffix needed
     case 'M':                                           // e.g. 'M-/' for / mirror, 'M-\\ for \ mirror
       if (suffix === '/') 
         return { type: 'mirror-slash' };
@@ -18,12 +18,9 @@ function parseCellCode(code) {
       // if no suffix, fall back:
       return { type: 'mirror-slash' };
     case 'S':                                           // e.g. 'S-D' for start down, 'S-L' for start left
-      if (suffix === 'D') return { type: 'start', direction: 'down' };
-      if (suffix === 'L') return { type: 'start', direction: 'left  ' };
-      if (suffix === 'R') return { type: 'start', direction: 'right' };
-      if (suffix === 'U') return { type: 'start', direction: 'up' };
+      if (suffix) return { type: 'start', direction: suffix };
       // if no suffix, fall back:
-      return { type: 'start', direction: 'down' }; // default to down
+      return { type: 'start', direction: 'D' }; // default to down
     default:  return { type: 'empty' };
   }
 }

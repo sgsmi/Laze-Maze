@@ -65,7 +65,7 @@ function computeSegments(ctx, rows, cols) {
     case 'U': dr = -1; break;
     case 'R': dc =  1; break;
     case 'L': dc = -1; break;
-    default:  dr =  1;
+    default:  dr =  1; 
   }
 
   const segments = [];
@@ -83,8 +83,8 @@ function computeSegments(ctx, rows, cols) {
       r = seg.er + dr; c = seg.ec + dc;
       continue;
     }
-    if (seg.type === 'bomb') {
-      window.dispatchEvent(new Event('bomb-hit'));
+    if (seg.type === 'bomb' || seg.type === 'target') {
+      window.dispatchEvent(new CustomEvent('cell-hit', { detail: {type: seg.type} }));
       break;
     }
     break;

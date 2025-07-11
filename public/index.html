@@ -4,6 +4,8 @@
 
 <div id="grid-container" style="position: relative; width:100%;max-width:600px;aspect-ratio:1;">
   <div id="overlay" class="hidden"></div>
+
+
   <!-- Game Over Modal -->
 <div id="gameOverModal" class="hidden">
   <div class="modal-content">
@@ -11,6 +13,17 @@
     <button id="restartBtn">Restart Level</button>
   </div>
 </div>
+
+<div id="winModal" class="modal hidden">
+  <div class="modal-content">
+    <p>🎉 Level Complete!</p>
+    <button id="nextLevelBtn">Next Level</button>
+    <button id="replayBtn">Play Again</button>
+    <button id="levelsBtn">Levels</button>
+  </div>
+</div>
+
+
   <div id="grid"></div>
   <canvas id="beamCanvas"
           style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;">
