@@ -1,10 +1,10 @@
-export function getLevelDims(level) {
-  const rows = level.layout.length;
-  const cols = level.layout[0].length;
-  return { rows, cols };
-}
+// to-do: add 'create level' functionality with UI and save to playerLevels.js
+// to-do: add 'delete level' functionality
+// to-do: add 'edit level' functionality with UI and save to playerLevels.js
+// to-do: add 'player-made levels' section in level select modal
+// note: max 2 portals per level, max 1 target, max 1 start
 
-export const levels = [
+export const playerLevels = [
   // Key:
   // 'S-[suffix]' = start cell 
   //      'D' = start down

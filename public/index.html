@@ -2,31 +2,86 @@
 <link rel="stylesheet" href="css/styles.css">
 <script type="module" src="js/index.js" defer></script>
 
-<div id="grid-container" style="position: relative; width:100%;max-width:600px;aspect-ratio:1;">
-  <div id="overlay" class="hidden"></div>
+<div id="game-wrapper">
+  <!-- Sidebar for utility buttons -->
+  <aside id="sidebar">
+    <button id="openKeyModal" class="utility-btn">Key</button>
+    <button id="levelsBtn"    class="utility-btn">Levels</button>
+  </aside>
+  
+  <div id="grid-container" style="position: relative; width:100%;max-width:600px;aspect-ratio:1;">
+    <div id="overlay" class="hidden"></div>
 
+    <!-- Game Over Modal -->
+    <div id="gameOverModal" class="hidden modal">
+      <div class="modal-content">
+        <p>💥 Game Over!</p>
+        <button id="restartBtn">Restart Level</button>
+      </div>
+    </div>
 
-  <!-- Game Over Modal -->
-<div id="gameOverModal" class="hidden">
-  <div class="modal-content">
-    <p>💥 Game Over!</p>
-    <button id="restartBtn">Restart Level</button>
+    <!-- Win Modal -->
+    <div id="winModal" class="hidden modal">
+      <div class="modal-content">
+        <p>🎉 Level Complete!</p>
+        <button id="nextLevelBtn">Next Level</button>
+        <button id="replayBtn">Play Again</button>
+        <button id="levelsBtn2">Levels</button>
+      </div>
+    </div>
+
+    <!-- Level Select Modal -->
+    <div id="levelSelectModal" class="hidden modal">
+      <div class="modal-content">
+        <h2>Select Level</h2>
+        <ul id="levelList"></ul>
+        <button id="closeLevelSelect">Close</button>
+      </div>
+    </div>
+
+    <div id="grid"></div>
+    <canvas id="beamCanvas"
+            style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;">
+    </canvas>
+    <button id="cancelPlacement" class="hidden">Cancel</button>
   </div>
-</div>
 
-<div id="winModal" class="modal hidden">
-  <div class="modal-content">
-    <p>🎉 Level Complete!</p>
-    <button id="nextLevelBtn">Next Level</button>
-    <button id="replayBtn">Play Again</button>
-    <button id="levelsBtn">Levels</button>
+  <!-- Key Modal -->
+  <div id="keyModal" class="hidden modal">
+    <div class="modal-content key">
+      <h2>Cell Key</h2>
+      <div class="key-grid">
+        <div class="key-item" data-type="start">
+          <div class="cell" data-type="start" data-direction="D"></div>
+          <div class="desc">Start → emits beam downward</div>
+        </div>
+        <div class="key-item" data-type="wall">
+          <div class="cell" data-type="wall"></div>
+          <div class="desc">Wall → blocks the beam</div>
+        </div>
+        <div class="key-item" data-type="mirror-slash">
+          <div class="cell" data-type="mirror-slash"></div>
+          <div class="desc">Mirror → reflects beam 90°</div>
+        </div>
+        </div>
+        <div class="key-item" data-type="portal">
+          <div class="cell" data-type="portal" data-portal-id="A"></div>
+          <div class="desc">Portal → teleports beam</div>
+        </div>
+        <div class="key-item" data-type="filter" data-color="R">
+          <div class="cell" data-type="filter" data-color="R"></div>
+          <div class="desc">Filter → tints beam</div>
+        </div>
+        <div class="key-item" data-type="bomb">
+          <div class="cell bomb-key" data-type="bomb"></div>
+          <div class="desc">Bomb → explosion kills you</div>
+        </div>
+        <div class="key-item" data-type="target">
+          <div class="cell" data-type="target"></div>
+          <div class="desc">Target → complete the level</div>
+        </div>
+      </div>
+      <button id="closeKeyModal">Close</button>
+    </div>
   </div>
-</div>
-
-
-  <div id="grid"></div>
-  <canvas id="beamCanvas"
-          style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;">
-  </canvas>
-  <button id="cancelPlacement" class="hidden">Cancel</button>
 </div>
