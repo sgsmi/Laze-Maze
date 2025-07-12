@@ -226,6 +226,12 @@ document.addEventListener('DOMContentLoaded', () => {
     refreshLevelList();
   });
 
+  levelSelectModal.addEventListener('click', e => {
+    if (e.target === levelSelectModal) {
+      levelSelectModal.classList.add('hidden');
+    }
+  });
+
   function startLevel() {
     exitPlacement();      // clear any mirror state
     gameOverModal.classList.add('hidden');
@@ -238,7 +244,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   openKey.addEventListener('click', () => {
     document.getElementById('keyModal').classList.remove('hidden');
-    animateKeyCells();
   });
   closeKey.addEventListener('click', () => {
     document.getElementById('keyModal').classList.add('hidden');
@@ -276,5 +281,14 @@ document.addEventListener('DOMContentLoaded', () => {
       ci = (ci + 1) % colors.length;
       filterCell.dataset.color = colors[ci];
     }, 1500);
+
+    const portalCell = document.querySelector('#keyModal .key-item[data-type="portal"] .cell');
+    const portalIds = ['A','B'];
+    let portalIndex = 0;
+    setInterval(() => {
+      portalIndex = (portalIndex + 1) % portalIds.length;
+      portalCell.dataset.portalId = portalIds[portalIndex];
+    }, 1500);
   }
+  animateKeyCells();
 });

@@ -244,7 +244,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   openKey.addEventListener('click', () => {
     document.getElementById('keyModal').classList.remove('hidden');
-    animateKeyCells();
   });
   closeKey.addEventListener('click', () => {
     document.getElementById('keyModal').classList.add('hidden');
@@ -291,4 +290,5 @@ document.addEventListener('DOMContentLoaded', () => {
       portalCell.dataset.portalId = portalIds[portalIndex];
     }, 1500);
   }
+  animateKeyCells();
 });

@@ -1,6 +1,5 @@
 import { getCellDimensions } from './utils.js';
 
-
 function parseCellCode(code) {
   // e.g. code = 'P-A' or 'F-R' or '#'
   const [prefix, suffix] = code.split('-');

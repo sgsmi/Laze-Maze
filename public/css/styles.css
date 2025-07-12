@@ -51,7 +51,7 @@
 /* BOMB (circle with fuse) */
 .cell[data-type="bomb"] {
   background: darkred;
-  animation: pulse 1.5s ease-in-out infinite;
+  animation: pulse 2s ease-in-out infinite;
 }
 @keyframes pulse {
   0%, 100% { opacity: 1; }
@@ -270,11 +270,15 @@
 }
 
 #levelSelectModal {
-  position: absolute;
-  top: 0; left: 0; width:100%; height:100%;
-  display: flex; align-items: center; justify-content: center;
+  position: fixed;        /* cover entire viewport */
+  top: 0; left: 0;        /* from corner to corner */
+  width: 100vw;
+  height: 100vh;
   background: rgba(0,0,0,0.6);
-  z-index: 30;
+  display: flex;          /* center its content */
+  align-items: center;
+  justify-content: center;
+  z-index: 100;           /* above everything */
 }
 #levelSelectModal .modal-content {
   background: white; padding: 2em; border-radius: 8px;
