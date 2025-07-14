@@ -5,14 +5,38 @@ import { syncCanvasSize,
          setAnimating }   from './beam.js';
 import { createGrid }     from './grid.js';
 import { debounce }       from './utils.js';
+import { setupMainMenu,
+         setupPauseMenu, 
+         setupWinLoseModals} from './menus.js';
 import { levels,
          getLevelDims }   from './levels.js';
 
-let currentLevel = 0;
-// keep track of which levels are unlocked
-let unlockedUpTo = 0; // index of highest-unlocked level
+// TODO: SYSTEMATICALLY REMOVE/REPLACE ANY UNUSED/UNNEEDED FUNCTIONS (namely menu-related)
+// IMPLEMENT NEW UNIVERSAL MENU SYSTEM, DO AWAY WITH OLD MODAL SYSTEM
+// -- continue implementation of universal inner modal system
 
-function loadLevel(idx) {
+
+// FURTHER TODOs:
+// - Add delay & animations so win & lose mechanics
+// - Consider a move counter, max mirrors, and a timed mode 
+
+// simple cookie getter/setter
+function setCookie(name, value, days = 365) {
+  const expires = new Date(Date.now() + days*864e5).toUTCString();
+  document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + expires + '; path=/';
+}
+function getCookie(name) {
+  return document.cookie.split('; ').reduce((r, c) => {
+    const [k, v] = c.split('=');
+    return k === name ? decodeURIComponent(v) : r;
+  }, '');
+}
+
+// initialize unlockedUpTo from cookie (or zero)
+export let unlockedUpTo = parseInt(getCookie('unlockedUpTo')) || 0, currentLevel = 0;
+
+
+export function loadLevel(idx) {
   const { rows, cols } = getLevelDims(levels[idx]), layout = levels[idx].layout;
   const gridEl = document.getElementById('grid');
   gridEl.innerHTML = '';
@@ -20,58 +44,47 @@ function loadLevel(idx) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  const { rows, cols } = getLevelDims(levels[currentLevel]);
-  const gridEl    = document.getElementById('grid');
-  const beamCanvas= document.getElementById('beamCanvas');
-  const ctx       = beamCanvas.getContext('2d');
-  const overlay   = document.getElementById('overlay');
-  const cancelBtn = document.getElementById('cancelPlacement');
-  const gameOverModal = document.getElementById('gameOverModal');
-  const restartBtn    = document.getElementById('restartBtn');
-  const winModal     = document.getElementById('winModal');
-  const nextLevelBtn = document.getElementById('nextLevelBtn');
-  const replayBtn    = document.getElementById('replayBtn');
-  const levelsBtn    = document.getElementById('levelsBtn');
-  const levelsBtn2   = document.getElementById('levelsBtn2');
-  const levelSelectModal = document.getElementById('levelSelectModal');
-  const levelList        = document.getElementById('levelList');
-  const closeLS          = document.getElementById('closeLevelSelect');
-  // Key modal
-  const openKey      = document.getElementById('openKeyModal');
-  const keyModal     = document.getElementById('keyModal');
-  const closeKey     = document.getElementById('closeKeyModal');
 
-  // populate level list
-  function refreshLevelList() {
-    levelList.innerHTML = '';
+  // grab level elements
+  const { rows, cols }  = getLevelDims(levels[currentLevel]);
+  const gridEl          = document.getElementById('grid');
+  const beamCanvas      = document.getElementById('beamCanvas');
+  const ctx             = beamCanvas.getContext('2d');
+  const overlay         = document.getElementById('overlay');
+
+
+  const cancelBtn         = document.getElementById('cancelPlacement');
+  const gameOverModal     = document.getElementById('gameOverModal');
+  const winModal          = document.getElementById('winModal');
+  const levelSelectModal  = document.getElementById('levelSelectModal');
+  const levelList         = document.getElementById('levelList');
+
+
+  //// LEVEL SELECT MODAL
+
+  // populate level list within specified container
+  // (currently either pause menu or level select modal)
+  function refreshLevelList(levelContainer, parentModal) {
+    levelContainer.innerHTML = '';
     levels.forEach((lvl, i) => {
       const li = document.createElement('li');
       li.textContent = `${i+1}. ${lvl.name} — ${lvl.description}`;
       if (i <= unlockedUpTo) {
         li.classList.add('unlocked');
         li.addEventListener('click', () => {
-          levelSelectModal.classList.add('hidden');
+          parentModal.classList.add('hidden');
           currentLevel = i;
           startLevel(i);
         });
       } else {
         li.classList.add('locked');
       }
-      levelList.append(li);
+      levelContainer.append(li);
     });
   }
 
-  closeLS.addEventListener('click', () => {
-    levelSelectModal.classList.add('hidden');
-  });
-
-  document.getElementById('levelsBtn').addEventListener('click', () => {
-    refreshLevelList();
-    levelSelectModal.classList.remove('hidden');
-  });
-
   // INITIAL SETUP
-  loadLevel(currentLevel);
+  // loadLevel(currentLevel);
   syncCanvasSize(beamCanvas);
   animateBeam(ctx, rows, cols);
   window.addEventListener('resize', debounce(() => onResize(ctx, rows, cols), 100));
@@ -100,6 +113,70 @@ document.addEventListener('DOMContentLoaded', () => {
     overlay.removeEventListener('mousemove', onMouseMove);
     overlay.removeEventListener('click', confirmPlacement);
   }
+  function startLevel() {
+    exitPlacement();      // clear any mirror state
+    gameOverModal.classList.add('hidden');
+    winModal.classList.add('hidden');
+    overlay.classList.remove('active');
+    loadLevel(currentLevel);
+    setAnimating(true); // re-enable animation
+  }
+
+
+  /* ====================
+      MENU & MODAL SETUP 
+     ==================== */
+
+  // Main menu setup
+  setupMainMenu({
+    onPlay()    {  startLevel(); },
+    onLevels()  {
+      // open level‐select modal (or master modal tab)
+      // TODO: update this to use the new universal modal system
+      refreshLevelList(levelList, levelSelectModal);
+      levelSelectModal.classList.remove('hidden');
+    },
+    onHowTo()   { alert("TODO: show how-to screen");  } // show “how to play”—for now a simple alert
+  });  
+
+  // Pause menu setup
+  setupPauseMenu({
+    onResume()     { setAnimating(true); },
+    onRestart()    { startLevel(); },
+    onOpenKey()    {},
+    onSelectLevel(container) {
+      refreshLevelList(container, document.getElementById('pauseMenu'));
+      // (pause menu already visible)
+    }
+  });
+
+  // Win / Lose modal setup
+  setupWinLoseModals({
+    onLevels() {
+      refreshLevelList(levelList, levelSelectModal);
+      levelSelectModal.classList.remove('hidden');
+    },
+    onReplay() {  startLevel();  },
+    onNext()  {
+      winModal.classList.add('hidden');
+      if (currentLevel < levels.length - 1) {
+        overlay.classList.add('hidden');
+        currentLevel++;
+        startLevel();
+      } else {
+      // Show levels selector or reset
+      levelSelectModal.classList.remove('hidden');
+      refreshLevelList(levelList, levelSelectModal);
+      }
+    },
+    onRestart() { // hide everything
+      gameOverModal.classList.add('hidden');
+      loadLevel(currentLevel);  // reload this level from scratch
+      setAnimating(true);       // re-enable animation
+    }
+  });
+
+  
 
   // MOUSEMOVE over overlay to update preview
   function onMouseMove(e) {
@@ -162,13 +239,14 @@ document.addEventListener('DOMContentLoaded', () => {
         break;
       case 'target':
         unlockedUpTo = Math.max(unlockedUpTo, currentLevel + 1);
+        setCookie('unlockedUpTo', unlockedUpTo);
         // stop the animation loop
         setAnimating(false);
         overlay.classList.remove('hidden');
         winModal.classList.remove('hidden');
         if (currentLevel === levels.length - 1) {
           // Last level completed, keep next level button hidden
-          nextLevelBtn.classList.add('hidden');
+          document.getElementById('nextLevelBtn').classList.add('hidden');
         }
         break;
       case 'portal':
@@ -176,119 +254,8 @@ document.addEventListener('DOMContentLoaded', () => {
         break;
       // etc…
     }
+
+    
   });
 
-
-  restartBtn.addEventListener('click', () => {
-    // hide everything
-    overlay.classList.add('hidden');
-    gameOverModal.classList.add('hidden');
-
-    // reload this level from scratch
-    loadLevel(currentLevel);
-
-    // re‐start the beam animation
-    const beamCanvas = document.getElementById('beamCanvas');
-    const ctx        = beamCanvas.getContext('2d');
-    syncCanvasSize(beamCanvas);
-    setAnimating(true); // re-enable animation
-    animateBeam(ctx, rows, cols);
-  });
-
-  nextLevelBtn.addEventListener('click', () => {
-    overlay.classList.add('hidden');
-    winModal.classList.add('hidden');
-    if (currentLevel < levels.length - 1) {
-      currentLevel++;
-      startLevel();
-    } else {
-      // No more levels, show end screen or reset
-      overlay.classList.remove('hidden');
-      // Show levels selector or reset
-      levelSelectModal.classList.remove('hidden');
-      refreshLevelList();
-    }
-  });
-
-  replayBtn.addEventListener('click', () => {
-    overlay.classList.add('hidden');
-    winModal.classList.add('hidden');
-    startLevel();  // reload same level
-  });
-
-  levelsBtn.addEventListener('click', () => {
-    levelSelectModal.classList.remove('hidden');
-    refreshLevelList();
-  });
-
-  levelsBtn2.addEventListener('click', () => {
-    levelSelectModal.classList.remove('hidden');
-    refreshLevelList();
-  });
-
-  levelSelectModal.addEventListener('click', e => {
-    if (e.target === levelSelectModal) {
-      levelSelectModal.classList.add('hidden');
-    }
-  });
-
-  function startLevel() {
-    exitPlacement();      // clear any mirror state
-    gameOverModal.classList.add('hidden');
-    winModal.classList.add('hidden');
-    overlay.classList.remove('active');
-    loadLevel(currentLevel);
-    setAnimating(true); // re-enable animation
-    syncCanvasSize(beamCanvas);
-    animateBeam(ctx, rows, cols);
-  }
-  openKey.addEventListener('click', () => {
-    document.getElementById('keyModal').classList.remove('hidden');
-  });
-  closeKey.addEventListener('click', () => {
-    document.getElementById('keyModal').classList.add('hidden');
-  });
-
-  keyModal.addEventListener('click', e => {
-    if (e.target === keyModal) {
-      keyModal.classList.add('hidden');
-    }
-  });
-
-  function animateKeyCells() {
-    // Start‐cell rotation every 1s through D→R→U→L
-    const startCell = document.querySelector('#keyModal .key-item[data-type="start"] .cell');
-    const dirs      = ['D','R','U','L'];
-    let di = 0;
-    setInterval(() => {
-      di = (di + 1) % dirs.length;
-      startCell.dataset.direction = dirs[di];
-    }, 1500);
-
-    // Mirror toggle between slash/backslash every 2s
-    const mirrorCell = document.querySelector('#keyModal .key-item[data-type="mirror-slash"] .cell');
-    let isSlash = true;
-    setInterval(() => {
-      isSlash = !isSlash;
-      mirrorCell.dataset.type = isSlash ? 'mirror-slash' : 'mirror-backslash';
-    }, 1500);
-
-    // Filter cycles R→G→B every 1s
-    const filterCell = document.querySelector('#keyModal .key-item[data-type="filter"] .cell');
-    const colors     = ['R','G','B'];
-    let ci = 0;
-    setInterval(() => {
-      ci = (ci + 1) % colors.length;
-      filterCell.dataset.color = colors[ci];
-    }, 1500);
-
-    const portalCell = document.querySelector('#keyModal .key-item[data-type="portal"] .cell');
-    const portalIds = ['A','B'];
-    let portalIndex = 0;
-    setInterval(() => {
-      portalIndex = (portalIndex + 1) % portalIds.length;
-      portalCell.dataset.portalId = portalIds[portalIndex];
-    }, 1500);
-  }
-  animateKeyCells();
 });

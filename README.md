@@ -4,7 +4,7 @@
 A browser-based puzzle where you place mirrors on a grid to guide a laser to its targets.
 
 ## Features
-- Interactive drag-and-drop mirror placement
+- Interactive click-to-place mirror placement
 - Real-time laser beam tracing with reflection logic
 - Multiple levels of increasing complexity
 
@@ -14,7 +14,7 @@ A browser-based puzzle where you place mirrors on a grid to guide a laser to its
 - **Build Tools:** npm scripts (no bundler for simplicity)
 
 ### Local (Development)
-1. Clone the repo: `git clone https://github.com/<sgsmi>/laze-maze.git`
+1. Clone the repo: `git clone https://github.com/sgsmi/laze-maze.git`
 2. Install dependencies: `npm install`
 3. Run locally: `npm start`
 4. Open http://localhost:3000 in your browser.
@@ -30,4 +30,4 @@ A browser-based puzzle where you place mirrors on a grid to guide a laser to its
 See [CONTRIBUTING.md](.github/ISSUE_TEMPLATE/feature_request.md).
 
 ## License
-Distributed under the MIT License. See [LICENSE](LICENSE) for details.
+Distributed under the MIT License. See [LICENSE](https://github.com/sgsmi/laze-maze.git/LICENSE) for details.

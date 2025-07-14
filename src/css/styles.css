@@ -270,27 +270,27 @@
 }
 
 #levelSelectModal {
-  position: absolute;
-  top: 0; left: 0; width:100%; height:100%;
-  display: flex; align-items: center; justify-content: center;
+  position: fixed;        /* cover entire viewport */
+  top: 0; left: 0;        /* from corner to corner */
+  width: 100vw;
+  height: 100vh;
   background: rgba(0,0,0,0.6);
-  z-index: 30;
+  display: flex;          /* center content */
+  align-items: center;
+  justify-content: center;
+  z-index: 100;           /* above everything */
 }
-#levelSelectModal .modal-content {
-  background: white; padding: 2em; border-radius: 8px;
-  max-height: 80%; overflow-y: auto;
-}
-#levelList {
+.levelList {
   list-style: none; padding: 0; margin: 1em 0;
 }
-#levelList li {
+.levelList li {
   padding: 0.5em; cursor: pointer;
   border-bottom: 1px solid #ddd;
 }
-#levelList li.unlocked:hover {
+.levelList li.unlocked:hover {
   background: #f5f5f5;
 }
-#levelList li.locked {
+.levelList li.locked {
   color: #999; cursor: default;
 }
 /* 2-column layout */
@@ -322,8 +322,165 @@
   cursor: pointer;
 }
 
+
+
+/* Main Menu & Pause Menu share the “modal” base */
+.modal {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(0,0,0,0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+.modal.hidden {
+  display: none;
+}
+.modal-content {
+  background: #111;
+  color: #fff;
+  padding: 2em;
+  border-radius: 8px;
+  text-align: center;
+  max-width: 90%;
+  box-shadow: 0 0 20px cyan;
+}
+
+/* Main Menu specifics */
+#mainMenu .title {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  text-shadow: 0 0 10px cyan;
+}
+#mainMenu button {
+  display: block;
+  margin: .5em auto;
+  padding: .75em 2em;
+  font-size: 1.2rem;
+}
+
+/* Pause Menu tabs */
+.tabs {
+  display: flex;
+  gap: 1em;
+  justify-content: center;
+  margin-bottom: 1em;
+}
+.tabs button {
+  padding: .5em 1em;
+  background: #222;
+  color: #fff;
+  border: 1px solid cyan;
+  cursor: pointer;
+}
+.tabs button.active {
+  background: cyan;
+  color: #000;
+}
+.tab-panels .panel {
+  display: none;
+}
+.tab-panels .panel:not(.hidden) {
+  display: block;
+}
+/* master modal backdrop */
+#masterModal {
+  position: fixed; top:0; left:0; right:0; bottom:0;
+  background: rgba(0,0,0,0.7); display:flex;
+  align-items:center; justify-content:center;
+  z-index:100;
+}
+#masterModal.hidden { display: none; }
+
+/* modal box */
+#masterModal .modal-content {
+  background:#222; color:#eee;
+  border-radius:8px; width: 90%; max-width: 500px;
+  padding:1em; position:relative;
+}
+/* close button */
+#masterModal .modal-close {
+  position:absolute; top:0.5em; right:0.5em;
+  background:transparent; border:none; color:#eee;
+  font-size:1.5em; cursor:pointer;
+}
+
+/* tabs */
+.modal-tabs {
+  display:flex; border-bottom:1px solid #555; margin-bottom:1em;
+}
+.modal-tabs button {
+  flex:1; padding:.5em; background:transparent;
+  border:none; color:#ccc; cursor:pointer;
+  border-bottom:3px solid transparent;
+}
+.modal-tabs button.active {
+  color:#fff; border-color:lime;
+}
+
+/* panels */
+.panel { display:block; }
+.panel.hidden { display:none; }
+
+
+/* inner modal overlay, sits within #pauseMenu */
+.inner-modal {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;           /* above the tabs/panels */
+}
+.inner-modal.hidden {
+  display: none;
+}
+
+/* the white box inside it */
+.inner-modal .inner-content {
+  position: relative;
+  background: #111;
+  border: 2px solid #0ff;
+  box-shadow: 0 0 10px #0ff;
+  padding: 1rem;
+  width: 90%;
+  max-width: 400px;
+  max-height: 80%;
+  overflow-y: auto;
+  color: #0ff;
+}
+
+/* close “×” button */
+.inner-modal .inner-close {
+  position: absolute;
+  top: 8px; right: 12px;
+  background: none;
+  border: none;
+  color: #0ff;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+
+
+
+
+
+/*  =======================
+    CONFIRMED NEEDED STYLES
+    =======================  */
+
+
+/* ================================
+   KEY MODAL STYLES
+   ================================ */
+
+
 /* Key modal: vertical list */
-.key-list {
+.key-grid {
   list-style: none;
   padding: 0;
   margin: 0;
@@ -350,12 +507,84 @@
   background: rgba(0,0,0,0.6);
   z-index: 100;
 }
-#keyModal .modal-content.key {
-  background: #fff;
-  padding: 1rem;
-  border-radius: 6px;
-  width: 300px;
-  max-height: 80%;
-  overflow-y: auto;
-  box-sizing: border-box;
+
+/*  KEY MODAL ANIMATIONS
+    ==================== */
+
+/* 1) Start arrow rotates through 4 directions every 1.5s (i.e. full cycle in 6s) */
+@keyframes start-rotate {
+  0%   { transform: translate(-50%, -50%) rotate(0deg); }
+  25%  { transform: translate(-50%, -50%) rotate(90deg); }
+  50%  { transform: translate(-50%, -50%) rotate(180deg); }
+  75%  { transform: translate(-50%, -50%) rotate(270deg); }
+  100% { transform: translate(-50%, -50%) rotate(360deg); }
 }
+
+.key-modal .key-item[data-type="start"] .cell::before {
+  animation: start-rotate 6s steps(1) infinite;
+}
+
+
+/* 2) Mirror toggles between slash and backslash every 1.5s (full cycle in 3s) */
+@keyframes mirror-toggle {
+  0%   { transform: translateX(-50%) rotate(45deg); }
+  50%  { transform: translateX(-50%) rotate(-45deg); }
+  100% { transform: translateX(-50%) rotate(45deg); }
+}
+
+.key-modal .key-item .cell[data-type="mirror-slash"]::before,
+.key-modal .key-item .cell[data-type="mirror-backslash"]::before {
+  /* apply to both so they animate in place */
+  animation: mirror-toggle 3s steps(1) infinite;
+}
+
+
+/* 3) Filter cycles through red → green → blue every 1s (full cycle in 3s) */
+@keyframes filter-cycle {
+  0%   { background: rgba(255,0,0,0.2); }
+  33.33% { background: rgba(0,255,0,0.2); }
+  66.66% { background: rgba(0,0,255,0.2); }
+  100% { background: rgba(255,0,0,0.2); }
+}
+
+.key-modal .key-item[data-type="filter"] .cell {
+  animation: filter-cycle 3s steps(1) infinite;
+}
+
+/* 4) Portal flips A/B every 1.5s (full cycle in 3s) */
+.key-modal .key-item[data-type="portal"] .cell {
+  position: relative;
+}
+
+/* two overlapping pseudo‐elements for A and B */
+.key-modal .key-item[data-type="portal"] .cell::before,
+.key-modal .key-item[data-type="portal"] .cell::after {
+  content: attr(data-portal-id);
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.2em;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 0 0 5px cyan;
+  animation: portal-flip 3s steps(1) infinite;
+}
+
+/* A shows during first half, B during second */
+.key-modal .key-item[data-type="portal"] .cell::before {
+  /* this one is “A” */
+  animation-delay:    0s;
+}
+.key-modal .key-item[data-type="portal"] .cell::after {
+  /* this one is “B” */
+  content: 'B';
+  animation-delay: -1.5s; /* start halfway through */
+}
+
+@keyframes portal-flip {
+  0%, 49.9%   { opacity: 1; }
+  50%, 100%  { opacity: 0; }
+}
+/*  =================================
+    END OF KEY MODAL STYLES
+    ================================ */

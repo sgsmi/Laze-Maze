@@ -1,3 +1,13 @@
+// TODO: update beam to slow animation path, ensure the user can see the beam path progress, 
+// if a user interrupts the beam path animation, it should reset to the start of the path 
+// (e.g. if a mirror is placed/removed, the beam path should recalculate from the start and resume animation
+// from furthest common point pre and post interruption i.e. if the beam is affected by 3 mirrors, and the user removes the middle mirror
+// the beam should resume from where the middle mirror was removed as all path previous to this point is unchanged)
+
+// 1. ensure beam path is recalculated on mirror placement/removal
+// 2. implement a way to pause/resume beam animation and remove segements that are no longer valid
+
+
 import { getCellDimensions } from './utils.js';
 
 export function syncCanvasSize(canvas) {
@@ -83,6 +93,32 @@ function computeSegments(ctx, rows, cols) {
       r = seg.er + dr; c = seg.ec + dc;
       continue;
     }
+    // ** Portal teleport **
+    if (seg.type === 'portal') {
+      const id = seg.er !== undefined
+        ? document
+            .querySelector(`.cell[data-row="${seg.er}"][data-col="${seg.ec}"]`)
+            .dataset.portalId
+        : null;
+      if (id) {
+        // find the paired portal
+        const all = Array.from(
+          document.querySelectorAll(`.cell[data-type="portal"][data-portal-id="${id}"]`)
+        );
+        // remove the one we’re on:
+        const destEl = all.find(el => 
+          Number(el.dataset.row) !== seg.er || Number(el.dataset.col) !== seg.ec
+        );
+        if (destEl) {
+          // teleport just outside that cell, preserving dr,dc
+          const destR = Number(destEl.dataset.row);
+          const destC = Number(destEl.dataset.col);
+          r = destR + dr;
+          c = destC + dc;
+          continue;
+        }
+      }
+    }
     if (seg.type === 'bomb' || seg.type === 'target') {
       window.dispatchEvent(new CustomEvent('cell-hit', { detail: {type: seg.type} }));
       break;
@@ -109,55 +145,61 @@ export function traceBeam(ctx, rows, cols) {
 // --- animated pulses rolling along the beam ---
 let animating = true;
 export function setAnimating(val) { animating = val; }
+
 export function animateBeam(ctx, rows, cols) {
-  if (!animating) return; // stop animation if not animating  
+  // 1) Resize
   syncCanvasSize(ctx.canvas);
-  t += 2;  // bump speed
 
-  // draw the static beam
-  const segs = computeSegments(ctx, rows, cols);
-  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-  ctx.beginPath();
-  ctx.lineWidth   = 2;
-  ctx.strokeStyle = 'rgba(255,255,0,0.75)';
-  for (const { sx, sy, ex, ey } of segs) {
-    ctx.moveTo(sx, sy);
-    ctx.lineTo(ex, ey);
-  }
-  ctx.stroke();
+  // 2) Advance animation ticker
+  t += 2;
 
-  // now draw moving “bumps”
-  let totalLen = 0;
-  for (const s of segs) {
-    const dx = s.ex - s.sx, dy = s.ey - s.sy;
-    totalLen += Math.hypot(dx, dy);
-  }
-
-  const count = 4;
-  const radius = 4;
-  const spacing = totalLen / count;
-
-  for (let i = 0; i < count; i++) {
-    let dist = (t + i * spacing) % totalLen;
-    let acc = 0;
+  // 3) Only draw if animating is true
+  if (animating) {
+    // --- static beam ---
+    const segs = computeSegments(ctx, rows, cols);
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    ctx.beginPath();
+    ctx.lineWidth   = 2;
+    ctx.strokeStyle = 'rgba(255,255,0,0.75)';
     for (const { sx, sy, ex, ey } of segs) {
-      const dx = ex - sx, dy = ey - sy;
-      const len = Math.hypot(dx, dy);
-      if (dist <= acc + len) {
-        const f = (dist - acc) / len;
-        const px = sx + dx * f, py = sy + dy * f;
-        ctx.beginPath();
-        ctx.arc(px, py, radius, 0, 2 * Math.PI);
-        ctx.fillStyle = 'rgba(255,255,0,0.9)';
-        ctx.fill();
-        break;
+      ctx.moveTo(sx, sy);
+      ctx.lineTo(ex, ey);
+    }
+    ctx.stroke();
+
+    // --- moving bumps ---
+    let totalLen = 0;
+    for (const s of segs) {
+      totalLen += Math.hypot(s.ex - s.sx, s.ey - s.sy);
+    }
+    const count   = 4;
+    const radius  = 4;
+    const spacing = totalLen / count;
+
+    for (let i = 0; i < count; i++) {
+      let dist = (t + i * spacing) % totalLen;
+      let acc  = 0;
+      for (const { sx, sy, ex, ey } of segs) {
+        const dx  = ex - sx, dy = ey - sy;
+        const len = Math.hypot(dx, dy);
+        if (dist <= acc + len) {
+          const f  = (dist - acc) / len;
+          const px = sx + dx * f, py = sy + dy * f;
+          ctx.beginPath();
+          ctx.arc(px, py, radius, 0, 2 * Math.PI);
+          ctx.fillStyle = 'rgba(255,255,0,0.9)';
+          ctx.fill();
+          break;
+        }
+        acc += len;
       }
-      acc += len;
     }
   }
 
+  // 4) Queue up the next frame unconditionally
   requestAnimationFrame(() => animateBeam(ctx, rows, cols));
 }
+
 
 export function onResize(ctx, rows, cols) {
   syncCanvasSize(ctx.canvas);
