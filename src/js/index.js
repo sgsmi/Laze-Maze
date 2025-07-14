@@ -36,13 +36,6 @@ function getCookie(name) {
 export let unlockedUpTo = parseInt(getCookie('unlockedUpTo')) || 0, currentLevel = 0;
 
 
-export function loadLevel(idx) {
-  const { rows, cols } = getLevelDims(levels[idx]), layout = levels[idx].layout;
-  const gridEl = document.getElementById('grid');
-  gridEl.innerHTML = '';
-  createGrid(gridEl, rows, cols, layout);
-}
-
 document.addEventListener('DOMContentLoaded', () => {
 
   // grab level elements
@@ -58,69 +51,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const winModal          = document.getElementById('winModal');
   const levelSelectModal  = document.getElementById('levelSelectModal');
   const levelList         = document.getElementById('levelList');
-
-
-  //// LEVEL SELECT MODAL
-
-  // populate level list within specified container
-  // (currently either pause menu or level select modal)
-  function refreshLevelList(levelContainer, parentModal) {
-    levelContainer.innerHTML = '';
-    levels.forEach((lvl, i) => {
-      const li = document.createElement('li');
-      li.textContent = `${i+1}. ${lvl.name} — ${lvl.description}`;
-      if (i <= unlockedUpTo) {
-        li.classList.add('unlocked');
-        li.addEventListener('click', () => {
-          parentModal.classList.add('hidden');
-          currentLevel = i;
-          startLevel(i);
-        });
-      } else {
-        li.classList.add('locked');
-      }
-      levelContainer.append(li);
-    });
-  }
-
-  // INITIAL SETUP
-  // loadLevel(currentLevel);
-  syncCanvasSize(beamCanvas);
-  animateBeam(ctx, rows, cols);
-  window.addEventListener('resize', debounce(() => onResize(ctx, rows, cols), 100));
-
-
-  // MIRROR PLACEMENT STATE
-  let placingCell = null;
-  let previewType = null;
-
-  // Show overlay & cancel only during placement
-  function enterPlacement(cell) {
-    placingCell = cell;
-    previewType = null;
-    cell.classList.add('selected');
-    overlay.classList.remove('hidden');
-    cancelBtn.classList.remove('hidden');
-    overlay.addEventListener('mousemove', onMouseMove);
-    overlay.addEventListener('click', confirmPlacement);
-  }
-  function exitPlacement() {
-    if (placingCell) placingCell.classList.remove('selected','preview-slash','preview-backslash');
-    placingCell = null;
-    previewType = null;
-    overlay.classList.add('hidden');
-    cancelBtn.classList.add('hidden');
-    overlay.removeEventListener('mousemove', onMouseMove);
-    overlay.removeEventListener('click', confirmPlacement);
-  }
-  function startLevel() {
-    exitPlacement();      // clear any mirror state
-    gameOverModal.classList.add('hidden');
-    winModal.classList.add('hidden');
-    overlay.classList.remove('active');
-    loadLevel(currentLevel);
-    setAnimating(true); // re-enable animation
-  }
 
 
   /* ====================
@@ -176,7 +106,51 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  
+  // populate level list within specified container
+  function refreshLevelList(levelContainer, parentModal) {
+    levelContainer.innerHTML = '';
+    levels.forEach((lvl, i) => {
+      const li = document.createElement('li');
+      li.textContent = `${i+1}. ${lvl.name} — ${lvl.description}`;
+      if (i <= unlockedUpTo) {
+        li.classList.add('unlocked');
+        li.addEventListener('click', () => {
+          parentModal.classList.add('hidden');
+          currentLevel = i;
+          startLevel(i);
+        });
+      } else {
+        li.classList.add('locked');
+      }
+      levelContainer.append(li);
+    });
+  }
+
+  // Close level select modal on click outside
+    levelSelectModal.addEventListener('click', e => {
+        if (e.target === levelSelectModal) {
+        levelSelectModal.classList.add('hidden');
+        }
+    });
+
+  /* ===================
+      END OF MENU SETUP
+     ===================
+  */
+
+
+  /* ====================
+       GRID SETUP
+     ====================*/
+  // loadLevel(currentLevel);
+  syncCanvasSize(beamCanvas);
+  animateBeam(ctx, rows, cols);
+  window.addEventListener('resize', debounce(() => onResize(ctx, rows, cols), 100));
+
+
+  // MIRROR PLACEMENT STATE
+  let placingCell = null;
+  let previewType = null;
 
   // MOUSEMOVE over overlay to update preview
   function onMouseMove(e) {
@@ -193,6 +167,38 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Load grid from given level
+  function loadLevel(level) {
+    const layout = levels[level].layout;
+    const gridEl = document.getElementById('grid');
+    gridEl.innerHTML = '';
+    createGrid(gridEl, rows, cols, layout);
+  }
+  // clear any mirror state, load level and ensure animations are active
+  function startLevel() {
+    exitPlacement();      // clear any mirror state
+    loadLevel(currentLevel);
+    setAnimating(true); // re-enable animation
+  }
+  // Show overlay & cancel only during placement
+  function enterPlacement(cell) {
+    placingCell = cell;
+    previewType = null;
+    cell.classList.add('selected');
+    overlay.classList.remove('hidden');
+    cancelBtn.classList.remove('hidden');
+    overlay.addEventListener('mousemove', onMouseMove);
+    overlay.addEventListener('click', confirmPlacement);
+  }
+  function exitPlacement() {
+    if (placingCell) placingCell.classList.remove('selected','preview-slash','preview-backslash');
+    placingCell = null;
+    previewType = null;
+    overlay.classList.add('hidden');
+    cancelBtn.classList.add('hidden');
+    overlay.removeEventListener('mousemove', onMouseMove);
+    overlay.removeEventListener('click', confirmPlacement);
+  }
   // CLICK on overlay confirms placement
   function confirmPlacement() {
     if (!placingCell || !previewType) return;
@@ -204,6 +210,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // CLICK on cancel aborts
   cancelBtn.addEventListener('click', exitPlacement);
 
+  /* =====================
+      GRID CLICK HANDLING
+     ===================== */
+
   // CLICK on grid: either start placement or just redraw beam
   gridEl.addEventListener('click', e => {
     const cell = e.target.closest('.cell');
@@ -212,6 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // If in placement, ignore grid clicks (overlay is above)
     if (placingCell) return;
 
+    // If mirror in clicked cell, clear and re-calculate beam
     if (cell.dataset.type === 'mirror-slash' || cell.dataset.type === 'mirror-backslash') {
       cell.dataset.type = 'empty';
       traceBeam(ctx, rows, cols);
@@ -219,14 +230,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Only start placement on empty cells
-    if (cell.dataset.type === 'empty') {
-      enterPlacement(cell);
-    } else {
-      // just redraw beam on non-empty clicks
-      traceBeam(ctx, rows, cols);
-    }
+    if (cell.dataset.type === 'empty')  enterPlacement(cell);
   });
 
+  /* ========================= 
+      BEAM COLLISION HANDLING 
+     ========================= */
+
+  // Handle collision events
   window.addEventListener('cell-hit', e => {
     switch (e.detail.type) {
       case 'bomb':
@@ -250,12 +261,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         break;
       case 'portal':
-        // teleport logic
+        // teleport logic held in beam.js
         break;
       // etc…
     }
-
-    
   });
-
 });
