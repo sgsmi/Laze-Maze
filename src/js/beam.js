@@ -1,7 +1,7 @@
 import { getCellDimensions } from './utils.js';
 
 // Beam travel speed in pixels per millisecond
-const BEAM_SPEED = 0.5;
+const BEAM_SPEED = 0.4;
 
 let segmentsCache = null;
 let travelDist    = 0;
@@ -22,9 +22,6 @@ export function syncCanvasSize(canvas) {
   canvas.width  = canvas.clientWidth;
   canvas.height = canvas.clientHeight;
 }
-
-function reflectSlash(dr, dc)      { return [-dc, -dr]; }
-function reflectBackslash(dr, dc) { return [ dc,  dc = dr, dr = dc, dr ]; }  // corrected below
 
 // single‐segment trace
 function traceOneSegment(r, c, dr, dc, rows, cols, cw, ch, canvas) {
@@ -60,16 +57,15 @@ function traceOneSegment(r, c, dr, dc, rows, cols, cw, ch, canvas) {
   return { sx, sy, ex, ey, length, type, er, ec, triggered: false };
 }
 
-// compute full path, overriding next‐segment starts after mirrors
+// --- build the full path segments, including portals ---
 function computeSegments(ctx, rows, cols) {
   const canvas = ctx.canvas;
   const { cellWidth: cw, cellHeight: ch } = getCellDimensions(canvas, cols, rows);
   const startEl = document.querySelector('.cell[data-type="start"]');
   if (!startEl) return [];
 
-  let r = +startEl.dataset.row,
-      c = +startEl.dataset.col;
-
+  // initial beam origin & direction
+  let r = +startEl.dataset.row, c = +startEl.dataset.col;
   let dr = 0, dc = 0;
   switch (startEl.dataset.direction) {
     case 'D': dr =  1; break;
@@ -83,14 +79,12 @@ function computeSegments(ctx, rows, cols) {
   let overrideStart = null;
 
   for (let i = 0; i < 20; i++) {
-    // trace next
     const seg = traceOneSegment(r, c, dr, dc, rows, cols, cw, ch, canvas);
 
-    // apply override to remove any gap
+    // apply any override so there's no gap when reflecting/teleporting
     if (overrideStart) {
       seg.sx = overrideStart.x;
       seg.sy = overrideStart.y;
-      // recalc length (approx)
       const dx = seg.ex - seg.sx, dy = seg.ey - seg.sy;
       seg.length = Math.hypot(dx, dy);
       overrideStart = null;
@@ -98,28 +92,50 @@ function computeSegments(ctx, rows, cols) {
 
     segs.push(seg);
 
-    // handle mirror
+    // Mirror reflection
     if (seg.type === 'mirror-slash' || seg.type === 'mirror-backslash') {
-      // compute new direction
       [dr, dc] = seg.type === 'mirror-slash'
         ? [-dc, -dr]
         : [ dc,  dr ];
 
-      // next iteration should start at the mirror center
       overrideStart = { x: seg.ex, y: seg.ey };
-
-      // step into next cell
       r = seg.er + dr;
       c = seg.ec + dc;
       continue;
     }
 
-    // stop on non‐mirror obstacle
+    // ** Portal teleport **
+    if (seg.type === 'portal') {
+      const thisId = document
+        .querySelector(`.cell[data-row="${seg.er}"][data-col="${seg.ec}"]`)
+        .dataset.portalId;
+
+      // find the *other* portal with same ID
+      const other = Array.from(document.querySelectorAll(`.cell[data-type="portal"][data-portal-id="${thisId}"]`))
+        .find(el => +el.dataset.row !== seg.er || +el.dataset.col !== seg.ec);
+
+      if (other) {
+        // teleport beam origin to the center of the other portal
+        const or = +other.dataset.row, oc = +other.dataset.col;
+        const cx = (oc + 0.5) * cw, cy = (or + 0.5) * ch;
+        overrideStart = { x: cx, y: cy };
+
+        // step one cell beyond the exit portal
+        r = or + dr;
+        c = oc + dc;
+        continue;
+      }
+      // if no pair found, just stop here
+      break;
+    }
+
+    // stop on everything else (wall, target, bomb, filter…)
     break;
   }
 
   return segs;
 }
+
 
 // compute common length (unchanged)
 function computeCommonLength(oldSegs, newSegs) {
