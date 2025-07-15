@@ -45,17 +45,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const ctx             = beamCanvas.getContext('2d');
   const overlay         = document.getElementById('overlay');
 
+  /* ====================
+      MENU & MODAL SETUP 
+     ==================== */
 
   const cancelBtn         = document.getElementById('cancelPlacement');
   const gameOverModal     = document.getElementById('gameOverModal');
   const winModal          = document.getElementById('winModal');
   const levelSelectModal  = document.getElementById('levelSelectModal');
   const levelList         = document.getElementById('levelList');
-
-
-  /* ====================
-      MENU & MODAL SETUP 
-     ==================== */
 
   // Main menu setup
   setupMainMenu({
@@ -76,7 +74,6 @@ document.addEventListener('DOMContentLoaded', () => {
     onOpenKey()    {},
     onSelectLevel(container) {
       refreshLevelList(container, document.getElementById('pauseMenu'));
-      // (pause menu already visible)
     }
   });
 
@@ -135,13 +132,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ===================
       END OF MENU SETUP
-     ===================
-  */
+     =================== */
 
 
   /* ====================
        GRID SETUP
-     ====================*/
+     ==================== */
   // loadLevel(currentLevel);
   syncCanvasSize(beamCanvas);
   animateBeam(ctx, rows, cols);

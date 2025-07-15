@@ -198,6 +198,7 @@ export function animateBeam(ctx, rows, cols) {
 
   // 4) Queue up the next frame unconditionally
   requestAnimationFrame(() => animateBeam(ctx, rows, cols));
+  
 }
 
 

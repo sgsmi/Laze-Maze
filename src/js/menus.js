@@ -57,23 +57,34 @@ export function setupPauseMenu({ onResume, onRestart, onOpenKey, onSelectLevel }
     const panels      = pauseMenu.querySelectorAll('.panel');
     const pauseLevels = document.getElementById('pauseLevelList');
 
+    let currentTab = 'general';
+    let lastTab    = 'general';
+
     // Inner Modal
     // (used for displaying key, how-to, and other info)
     // grab inner modal pieces
-    const innerModal = document.getElementById('innerModal');
+    const innerModal = document.getElementById('panel-inner');
     const innerBody  = document.getElementById('innerBody');
     const innerClose = document.getElementById('innerClose');
 
-    // close handler
-    innerClose.onclick = () => {
-        innerModal.classList.add('hidden');
-    };
-
     // openInnerModal(contentHtml)
     function openInnerModal(html) {
+        lastTab = currentTab;
+        activateTab('inner')
         innerBody.innerHTML = html;
         innerModal.classList.remove('hidden');
     }
+
+    innerBack.addEventListener('click', () => {
+        // clear out whatever you put in there (optional)
+        innerBody.innerHTML = '';
+        activateTab(lastTab);
+    });
+
+    // // close handler
+    // innerClose.onclick = () => {
+    //     innerModal.classList.add('hidden');
+    // };
 
     // ESC toggles pause
     document.addEventListener('keydown', e => {
@@ -95,6 +106,7 @@ export function setupPauseMenu({ onResume, onRestart, onOpenKey, onSelectLevel }
         });
     });
     function activateTab(name) {
+        currentTab = name;
         tabs.forEach(b => b.classList.toggle('active', b.dataset.tab === name));
         panels.forEach(p => p.classList.toggle('hidden', p.id !== `panel-${name}`));
     }
@@ -120,10 +132,7 @@ export function setupPauseMenu({ onResume, onRestart, onOpenKey, onSelectLevel }
  * @param {{onLevels:Function,onReplay:Function,onNext:Function,onRestart:Function}} cfg
  */
 export function setupWinLoseModals ({ onLevels, onReplay, onNext, onRestart}) {
-// // Game over modal
-    const restartBtn    = document.getElementById('restartBtn');
-
-    // // Win modal
+    // Win modal
     const winModal     = document.getElementById('winModal');
     const nextLevelBtn = document.getElementById('nextLevelBtn');
     const replayBtn    = document.getElementById('replayBtn');
@@ -156,25 +165,19 @@ export function setupWinLoseModals ({ onLevels, onReplay, onNext, onRestart}) {
     // }
     // });
 
-    
-
     nextLevelBtn.addEventListener('click', () => {
         onNext();
     });
 
-    // Lose modal restart button
-    restartBtn.addEventListener('click', () => {
+
+    // Game over modal
+    document.getElementById('restartBtn').addEventListener('click', () => {
         overlay.classList.add('hidden');
         onRestart();
     });
 
 
-    // // Close level select modal on click outside
-    // levelSelectModal.addEventListener('click', e => {
-    //     if (e.target === levelSelectModal) {
-    //     levelSelectModal.classList.add('hidden');
-    //     }
-    // });
+    // 
 }
 
 export function openWinModal() {

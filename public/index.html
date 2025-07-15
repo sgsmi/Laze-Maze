@@ -4,36 +4,6 @@
 
 
 <body>
-  <div id="masterModal" class="hidden">
-    <div class="modal-content">
-      <button id="masterClose" class="modal-close">×</button>
-      <nav class="modal-tabs">
-        <button data-tab="general" class="active">General</button>
-        <button data-tab="levels">Levels</button>
-        <button data-tab="settings">Settings</button>
-        <button data-tab="about">About</button>
-      </nav>
-      <section class="modal-panels">
-        <div id="panel-general" class="panel"> 
-          <!-- e.g. game over / win content goes here -->
-          <div id="generalContent"></div>
-        </div>
-        <div id="panel-levels" class="panel hidden">
-          <h2>Select Level</h2>
-          <ul id="masterLevelList"></ul>
-        </div>
-        <div id="panel-settings" class="panel hidden">
-          <h2>Settings</h2>
-          <!-- your volume, color mode, etc. -->
-        </div>
-        <div id="panel-about" class="panel hidden">
-          <h2>About Laze Maze</h2>
-          <p>to-do</p>
-        </div>
-      </section>
-    </div>
-  </div>
-
   <!-- Main Menu -->
   <div id="mainMenu" class="modal">
     <div class="modal-content">
@@ -53,16 +23,18 @@
         <button data-tab="levels">Levels</button>
         <button data-tab="settings">Settings</button>
         <button data-tab="about">About</button>
+        <button data-tab="inner" class="hidden"></button>
       </nav>
 
-      <div id="innerModal" class="inner-modal hidden">
+      <!-- <div id="innerModal" class="inner-modal hidden">
         <div class="inner-content">
           <button id="innerClose" class="inner-close" aria-label="Close">×</button>
-          <div id="innerBody"><!-- injected HTML goes here --></div>
+          <div id="innerBody"> injected HTML goes here</div>
         </div>
-      </div>
+      </div> -->
       
       <div class="tab-panels">
+
         <div id="panel-general" class="panel">
           <button id="btnResume">Resume Game</button>
           <button id="btnRestart">Restart Level</button>
@@ -81,6 +53,13 @@
           <h3>About</h3>
           <p>“Laze Maze” v1.0 …</p>
         </div>
+        <div id="panel-inner" class="panel hidden">
+          <div class="inner-content">
+            <button id="innerBack" class="inner-close" aria-label="Back">← Back</button>
+            <div id="innerBody"><!-- injected HTML goes here --></div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -135,8 +114,7 @@
     </div>
 
     <!-- Key Modal content for innerModal -->
-     <div id="keyModal" class="key-modal hidden modal">
-      <div class="modal-content key ">
+      <div id="keyModal" class="modal-content hidden">
         <h2>Cell Key</h2>
         <div class="key-grid">
           <div class="key-item" data-type="start">
@@ -170,6 +148,6 @@
           </div>
         </div>
       </div>
-    </div>
+
   </div>
 </body>

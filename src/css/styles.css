@@ -335,9 +335,6 @@
   justify-content: center;
   z-index: 200;
 }
-.modal.hidden {
-  display: none;
-}
 .modal-content {
   background: #111;
   color: #fff;
@@ -392,7 +389,6 @@
   align-items:center; justify-content:center;
   z-index:100;
 }
-#masterModal.hidden { display: none; }
 
 /* modal box */
 #masterModal .modal-content {
@@ -422,25 +418,20 @@
 
 /* panels */
 .panel { display:block; }
-.panel.hidden { display:none; }
-
 
 /* inner modal overlay, sits within #pauseMenu */
 .inner-modal {
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.7);
+  background: rgba(136, 134, 134, 0.507);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 300;           /* above the tabs/panels */
 }
-.inner-modal.hidden {
-  display: none;
-}
 
 /* the white box inside it */
-.inner-modal .inner-content {
+.inner-content {
   position: relative;
   background: #111;
   border: 2px solid #0ff;
@@ -453,16 +444,16 @@
   color: #0ff;
 }
 
-/* close “×” button */
-.inner-modal .inner-close {
+.inner-close {
   position: absolute;
   top: 8px; right: 12px;
   background: none;
   border: none;
   color: #0ff;
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   cursor: pointer;
 }
+
 
 
 
