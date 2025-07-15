@@ -278,7 +278,7 @@
   display: flex;          /* center content */
   align-items: center;
   justify-content: center;
-  z-index: 100;           /* above everything */
+  z-index: 200;           /* above everything */
 }
 .levelList {
   list-style: none; padding: 0; margin: 1em 0;
@@ -381,26 +381,6 @@
 }
 .tab-panels .panel:not(.hidden) {
   display: block;
-}
-/* master modal backdrop */
-#masterModal {
-  position: fixed; top:0; left:0; right:0; bottom:0;
-  background: rgba(0,0,0,0.7); display:flex;
-  align-items:center; justify-content:center;
-  z-index:100;
-}
-
-/* modal box */
-#masterModal .modal-content {
-  background:#222; color:#eee;
-  border-radius:8px; width: 90%; max-width: 500px;
-  padding:1em; position:relative;
-}
-/* close button */
-#masterModal .modal-close {
-  position:absolute; top:0.5em; right:0.5em;
-  background:transparent; border:none; color:#eee;
-  font-size:1.5em; cursor:pointer;
 }
 
 /* tabs */

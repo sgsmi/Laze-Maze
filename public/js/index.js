@@ -2,7 +2,9 @@ import { syncCanvasSize,
          traceBeam, 
          onResize, 
          animateBeam,
-         setAnimating }   from './beam.js';
+         setAnimating,
+         resetBeam,
+         updateBeamOnMapChange }   from './beam.js';
 import { createGrid }     from './grid.js';
 import { debounce }       from './utils.js';
 import { setupMainMenu,
@@ -113,6 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
         li.classList.add('unlocked');
         li.addEventListener('click', () => {
           parentModal.classList.add('hidden');
+          document.getElementById('mainMenu').classList.add('hidden');
           currentLevel = i;
           startLevel(i);
         });
@@ -140,7 +143,9 @@ document.addEventListener('DOMContentLoaded', () => {
      ==================== */
   // loadLevel(currentLevel);
   syncCanvasSize(beamCanvas);
+  resetBeam();
   animateBeam(ctx, rows, cols);
+  
   window.addEventListener('resize', debounce(() => onResize(ctx, rows, cols), 100));
 
 
@@ -174,6 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function startLevel() {
     exitPlacement();      // clear any mirror state
     loadLevel(currentLevel);
+    resetBeam();
     setAnimating(true); // re-enable animation
   }
   // Show overlay & cancel only during placement
@@ -200,7 +206,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!placingCell || !previewType) return;
     placingCell.dataset.type = previewType;
     exitPlacement();
-    traceBeam(ctx, rows, cols);
+    updateBeamOnMapChange(ctx, rows, cols);
+    // traceBeam(ctx, rows, cols);
   }
 
   // CLICK on cancel aborts
@@ -221,7 +228,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // If mirror in clicked cell, clear and re-calculate beam
     if (cell.dataset.type === 'mirror-slash' || cell.dataset.type === 'mirror-backslash') {
       cell.dataset.type = 'empty';
-      traceBeam(ctx, rows, cols);
+      updateBeamOnMapChange(ctx, rows, cols);
+      // traceBeam(ctx, rows, cols);
       return;
     }
 
