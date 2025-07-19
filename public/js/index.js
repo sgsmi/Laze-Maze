@@ -27,6 +27,16 @@ on bombs etc)
 /// with the correct version clearly highlighted, make sure the cell showing on the main dropdown is the
 /// selected type, and let the user close the dropdown if desired
 
+// Level creator fixes needed: if replacing a cell with another variant 
+// whilst at max count, it blocks the user from placing the new variant, fix
+
+// portal type and filter type on level creator are not set by default
+// and do not show any variant on load in, fix
+
+// introduce pre-level mission briefing screen with text animation,
+// e.g. "Your mission is to breach the building and reach the target
+// with a beam of light, using mirrors to redirect the beam. Avoid traps
+// and obstacles, and use the available tools wisely. Good luck!"
 
 
 
@@ -80,10 +90,9 @@ export function modeToggle(mode) {
       break;
     case 'playing':
       // to-do - move beam logic here to ensure it is always reset
-      resetBeam();
-      const dims = getLevelDims(levels[currentLevel]);
-      animateBeam( beamCanvas.getContext('2d'), dims.rows, dims.cols);
-      // possibly also load level, grid generation if it doesn't exist/isn't correct, etc.
+      syncCanvasSize(playBoard.querySelector('#beamCanvas'));
+      startLevel(); // load the current level
+      setAnimating(true);
       break;
     case 'creator':
       syncCanvasSize(creatorGrid)
@@ -119,20 +128,79 @@ const gameWrapper = document.getElementById('game-wrapper');
 const creatorWrapper = document.getElementById('creator-wrapper');
 
 
+
+// Mirror‐placement helpers
+let placingCell = null, previewType = null;
+export function exitPlacement() {
+  if (placingCell) placingCell.classList.remove('selected','preview-slash','preview-backslash');
+  placingCell = null; previewType = null;
+  overlay.classList.add('hidden');
+  cancelBtn.classList.add('hidden');
+  overlay.removeEventListener('mousemove', onMouseMove);
+  overlay.removeEventListener('click', confirmPlacement);
+}
+function enterPlacement(cell) {
+  placingCell = cell; previewType = null;
+  cell.classList.add('selected');
+  overlay.classList.remove('hidden');
+  cancelBtn.classList.remove('hidden');
+  overlay.addEventListener('mousemove', onMouseMove);
+  overlay.addEventListener('click', confirmPlacement);
+}
+function onMouseMove(e) {
+  if (!placingCell) return;
+  const rect = placingCell.getBoundingClientRect();
+  const x = e.clientX - rect.left, y = e.clientY - rect.top;
+  const slash = (x < rect.width/2 && y < rect.height/2)
+             || (x > rect.width/2 && y > rect.height/2);
+  const t = slash ? 'mirror-slash' : 'mirror-backslash';
+  if (t !== previewType) {
+    placingCell.classList.toggle('preview-slash', slash);
+    placingCell.classList.toggle('preview-backslash', !slash);
+    previewType = t;
+  }
+}
+function confirmPlacement() {
+  if (!placingCell || !previewType) return;
+  placingCell.dataset.type = previewType;
+  exitPlacement();
+  updateBeamOnMapChange();
+}
+// Level loading & starting
+export function loadLevel(level) {
+  const gridEl = document.getElementById('grid');
+  gridEl.innerHTML = '';
+  const { rows, cols } = getLevelDims(levels[level]);
+  createGrid(gridEl, rows, cols, levels[level].layout);
+}
+export function startLevel() {
+  exitPlacement();
+  loadLevel(currentLevel);
+  resetBeam();
+  setAnimating(true);
+  syncCanvasSize(beamCanvas);
+  const { rows, cols } = getLevelDims(levels[currentLevel]);
+  animateBeam(beamCanvas.getContext('2d'), rows, cols);
+}
+
+
+// placeholders
+let overlay, cancelBtn, beamCanvas;
+
 document.addEventListener('DOMContentLoaded', () => {
+
+  overlay    = document.getElementById('overlay');
+  cancelBtn  = document.getElementById('cancelPlacement');
+  beamCanvas = document.getElementById('beamCanvas');
 
   // grab level elements
   const { rows, cols }  = getLevelDims(levels[currentLevel]);
   const gridEl          = document.getElementById('grid');
-  const beamCanvas      = document.getElementById('beamCanvas');
-  const ctx             = beamCanvas.getContext('2d');
-  const overlay         = document.getElementById('overlay');
 
   /* ====================
       MENU & MODAL SETUP 
      ==================== */
 
-  const cancelBtn         = document.getElementById('cancelPlacement');
   const gameOverModal     = document.getElementById('gameOverModal');
   const winModal          = document.getElementById('winModal');
   const levelSelectModal  = document.getElementById('levelSelectModal');
@@ -240,79 +308,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
   /* ====================
-       GRID SETUP
+      GRID SETUP
      ==================== */
-  // loadLevel(currentLevel);
-  syncCanvasSize(beamCanvas);
-  resetBeam();
-  // animateBeam(ctx, rows, cols);
+  // syncCanvasSize(beamCanvas);
+  // resetBeam();
   
   window.addEventListener('resize', debounce(() => onResize(ctx, rows, cols), 100));
-
-  // MIRROR PLACEMENT STATE
-  let placingCell = null;
-  let previewType = null;
-
-  // MOUSEMOVE over overlay to update preview
-  function onMouseMove(e) {
-    if (!placingCell) return;
-    const rect = placingCell.getBoundingClientRect();
-    const xRel = e.clientX - rect.left, yRel = e.clientY - rect.top;
-    const slash = (xRel < rect.width/2 && yRel < rect.height/2)
-               || (xRel > rect.width/2 && yRel > rect.height/2);
-    const type = slash ? 'mirror-slash' : 'mirror-backslash';
-    if (type !== previewType) {
-        placingCell.classList.toggle('preview-slash', slash);
-        placingCell.classList.toggle('preview-backslash', !slash);
-        previewType = type;
-    }
-  }
-
- 
-
-  // Load grid from given level
-  function loadLevel(level) {
-    const layout = levels[level].layout;
-    const gridEl = document.getElementById('grid');
-    gridEl.innerHTML = '';
-    createGrid(gridEl, rows, cols, layout);
-  }
-  // clear any mirror state, load level and ensure animations are active
-  function startLevel() {
-    exitPlacement();
-    const { rows, cols } = getLevelDims(levels[currentLevel]);
-    loadLevel(currentLevel);
-    resetBeam();
-    setAnimating(true);
-    syncCanvasSize(beamCanvas);
-    animateBeam(ctx, rows, cols);
-  }
-  // Show overlay & cancel only during placement
-  function enterPlacement(cell) {
-    placingCell = cell;
-    previewType = null;
-    cell.classList.add('selected');
-    overlay.classList.remove('hidden');
-    cancelBtn.classList.remove('hidden');
-    overlay.addEventListener('mousemove', onMouseMove);
-    overlay.addEventListener('click', confirmPlacement);
-  }
-  function exitPlacement() {
-    if (placingCell) placingCell.classList.remove('selected','preview-slash','preview-backslash');
-    placingCell = null;
-    previewType = null;
-    overlay.classList.add('hidden');
-    cancelBtn.classList.add('hidden');
-    overlay.removeEventListener('mousemove', onMouseMove);
-    overlay.removeEventListener('click', confirmPlacement);
-  }
-  // CLICK on overlay confirms placement
-  function confirmPlacement() {
-    if (!placingCell || !previewType) return;
-    placingCell.dataset.type = previewType;
-    exitPlacement();
-    updateBeamOnMapChange();
-  }
 
   // CLICK on cancel aborts
   cancelBtn.addEventListener('click', exitPlacement);
