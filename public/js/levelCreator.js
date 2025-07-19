@@ -11,8 +11,6 @@ const CELL_TYPES = [
   { key: 'target', name: 'Target',       multiple: false,  codePrefix: 'T', iconType: 'target',       variants: [],         limit: 1 },
 ];
 
-const counts = {};
-
 export function initLevelCreator({
   aside, createContainer, maxRows = 10, maxCols = 10,
   saveLevel, loadLevel
@@ -20,28 +18,47 @@ export function initLevelCreator({
   
   let rows = 10, cols = 10;
   let layout = createEmptyLayout(rows, cols);
-
-  let selectedType = 'wall';
+  let selectedType = null;
   let selectedVariant = null;
+  const variantMap = {};  // remembers last selected variant for each type
+  const counts = {}
   
 
   // 1) Build the aside palette
   const palette = document.createElement('ul');
   palette.className = 'creator-palette';
-  
+  aside.append(palette);
+
+  const variantBar = document.createElement('div');
+  variantBar.className = 'variant-bar hidden';
+
+  // Populate palette items
   CELL_TYPES.forEach(type => {
     const li = document.createElement('li');
     li.className = 'creator-item';
+    li.dataset.key = type.key;
+    // tooltip on hover
+    li.title = type.name + (type.variants.length ? ` (${type.variants.join(',')})` : '');
     li.innerHTML = `
-      <div class="icon cell" data-type="${type.iconType}"></div>
+      <div class="preview-cell cell" data-type="${type.iconType}"></div>
       <span class="label">${type.name}</span>
       <span class="count">0 / ${type.limit}</span>
     `;
-    li.onclick = () => selectType(type.key);
+    li.addEventListener('click', () => selectType(type.key, li));
     palette.append(li);
   });
-  aside.append(palette);
 
+  // 2) Seed the default “start” variant
+  variantMap['start'] = 'U';
+
+  // 3) Auto-select the Start tool
+  const startLi = palette.querySelector('li[data-key="start"]');
+  if (startLi) {
+    selectType('start', startLi);
+  }
+
+  // Ensure the variant bar stays hidden on load
+  variantBar.classList.add('hidden');
 
   // Exit button
   const exitBtn = document.getElementById('exitCreator');
@@ -49,38 +66,97 @@ export function initLevelCreator({
     modeToggle('main');
   };
 
+  // 2) Variant-picker logic + live preview update
+  function selectType(key, li) {
+    const hasVariants = CELL_TYPES.find(t => t.key === key).variants.length > 0;
 
-  // 2) Variant-picker popup
-  const variantBar = document.createElement('div');
-  variantBar.className = 'variant-bar hidden';
-  aside.append(variantBar);
+    // 1) If clicking the same type and the variant bar is visible, just hide it
+    if (selectedType?.key === key && !variantBar.classList.contains('hidden')) {
+      variantBar.classList.add('hidden');
+      return;
+    }
 
-  function selectType(key) {
-    // highlight
-    aside.querySelectorAll('.creator-item').forEach(li => {
-      li.classList.toggle('active', li.querySelector('.icon').dataset.type === key);
+    // 2) Highlight the clicked <li>, un-highlight siblings
+    aside.querySelectorAll('.creator-item').forEach(item => {
+      item.classList.toggle('active', item === li);
     });
-    selectedType = CELL_TYPES.find(t=>t.key===key);
-    selectedVariant = null;
 
-    // if this type has variants, show below
-    if (selectedType.variants.length) {
-      variantBar.innerHTML = '';
+    // 3) Update selectedType
+    selectedType = CELL_TYPES.find(t => t.key === key);
+
+    // 4) Re-build the variantBar
+    if (variantBar.parentElement) variantBar.parentElement.removeChild(variantBar);
+    variantBar.innerHTML = '';
+
+    if (hasVariants) {
+      // 5) Create one button per variant
       selectedType.variants.forEach(v => {
         const btn = document.createElement('button');
         btn.textContent = v;
-        btn.onclick = () => {
-          selectedVariant = v;
-          variantBar.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+        btn.addEventListener('click', e => {
+          e.stopPropagation(); // don’t bubble up to the <li>
+          // un-highlight all
+          variantBar.querySelectorAll('button').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
-        };
+          selectedVariant = v;
+          variantMap[key] = v;               // remember it
+          updatePalettePreview(li, key, v);
+        });
         variantBar.append(btn);
       });
+
+      // 6) Restore last variant or default to first
+      const saved = variantMap[key];
+      if (saved && selectedType.variants.includes(saved)) {
+        selectedVariant = saved;
+      } else {
+        selectedVariant = selectedType.variants[0];
+        variantMap[key] = selectedVariant;
+      }
+
+      // 7) Highlight that variant button
+      variantBar.querySelectorAll('button').forEach(b => {
+        b.classList.toggle('active', b.textContent === selectedVariant);
+      });
+
+      // 8) Show the bar beneath this <li>
       variantBar.classList.remove('hidden');
+      li.append(variantBar);
+
     } else {
+      // no variants → clear
+      selectedVariant = null;
       variantBar.classList.add('hidden');
     }
+
+    // 9) Update the little preview icon
+    updatePalettePreview(li, key, selectedVariant);
   }
+
+  // helper to sync the preview icon inside a palette <li>
+  function updatePalettePreview(li, typeKey, variant) {
+    const preview = li.querySelector('.preview-cell');
+    // set base type
+    preview.dataset.type = typeKey;
+
+    // clear all variant attrs
+    delete preview.dataset.direction;
+    delete preview.dataset.portalId;
+    delete preview.dataset.color;
+
+    // if there is a variant, set the correct data-attr
+    if (variant) {
+      if (typeKey === 'start') {
+        preview.dataset.direction = variant;
+      } else if (typeKey === 'portal') {
+        preview.dataset.portalId = variant;
+      } else if (typeKey === 'filter') {
+        preview.dataset.color = variant;
+      }
+    }
+  }
+
+
 
   // 3) Rows/Cols rockers
   const controls = document.createElement('div');
@@ -119,9 +195,8 @@ export function initLevelCreator({
     if (!cell || !selectedType) return;
     const r = +cell.dataset.row, c = +cell.dataset.col;
 
-    // compute the canonical code for this type+variant
     const code = selectedType.codePrefix
-              + (selectedVariant ? '-' + selectedVariant : '');
+            + (selectedVariant ? '-' + selectedVariant : '');
 
     const isAdding = layout[r][c] !== code;
 
@@ -134,10 +209,10 @@ export function initLevelCreator({
     // toggle
     layout[r][c] = (layout[r][c] === code) ? '.' : code;
 
+
     updateCounts();
     redraw();
     console.log(`gridEl eventListener redraw()`)
-
   });
 
   function redraw() {
@@ -181,7 +256,7 @@ export function initLevelCreator({
       const count = layout.flat().filter(cell => cell.startsWith(type.codePrefix)).length;
       counts[type.key] = count;
       aside.querySelectorAll('.creator-item').forEach(li => {
-        if (li.querySelector('.icon').dataset.type === type.key) {
+        if (li.querySelector('.preview-cell').dataset.type === type.key) {
           li.querySelector('.count').textContent = `${count}/${type.limit}`;
         }
       });
@@ -192,5 +267,6 @@ export function initLevelCreator({
     return Array.from({length:r},()=>Array.from({length:c},()=>'.'));
   }
   updateCounts();
+
 }
 

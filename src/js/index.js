@@ -9,10 +9,26 @@ Game narrative: breaching a building,
 New cell types:
   Alarm cell - once tripped, the player has x amount of time to finish the level
 
-
-Helper function to display and hide all relevant items for a mode maybe progress on setMode
-
+Some sort of points system for style, e.g. multipliers for longest beam 
+without intervention (i.e. if the user plans out their route beforehand 
+and then places the final mirror and lets it run, points for near misses
+on bombs etc)
 */
+
+
+
+//////
+/// TODO: Fix beam not generating on returning from level creator to game mode (it works if exiting to menu from game mode and returning
+/// but never after level creator, even if the game was initialised first with a functioning beam)
+/// Level creator keeps board, add a reset button, warn on refresh or exit if level creator has unsaved changes
+/// implement level creator save button properly
+/// add default types for portal, start & filter cell placement for levelCreator & jazz up the UI
+/// cells are not showing in creatorAside, have the selection panel appear below the chosen cell type 
+/// with the correct version clearly highlighted, make sure the cell showing on the main dropdown is the
+/// selected type, and let the user close the dropdown if desired
+
+
+
 
 import { syncCanvasSize, 
          traceBeam, 
@@ -22,7 +38,9 @@ import { syncCanvasSize,
          resetBeam,
          updateBeamOnMapChange }   from './beam.js';
 import { createGrid }     from './grid.js';
-import { debounce }       from './utils.js';
+import { debounce,
+         setCookie,
+         getCookie }       from './utils.js';
 import { setupMainMenu,
          setupPauseMenu, 
          setupWinLoseModals} from './menus.js';
@@ -34,18 +52,6 @@ import { initLevelCreator } from './levelCreator.js';
 // FURTHER TODOs:
 // - Add delay & animations so win & lose mechanics
 // - Consider a move counter, max mirrors, and a timed mode 
-
-// simple cookie getter/setter
-function setCookie(name, value, days = 365) {
-  const expires = new Date(Date.now() + days*864e5).toUTCString();
-  document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + expires + '; path=/';
-}
-function getCookie(name) {
-  return document.cookie.split('; ').reduce((r, c) => {
-    const [k, v] = c.split('=');
-    return k === name ? decodeURIComponent(v) : r;
-  }, '');
-}
 
 // initialize unlockedUpTo from cookie (or zero)
 export let unlockedUpTo = parseInt(getCookie('unlockedUpTo')) || 0, currentLevel = 0;
@@ -262,12 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function onGridClick(e) {
-    const cell = e.target.closest('.cell');
-    if (!cell) return;
-    if (inMode === 'playing')       return handleMirrorPlacement(cell);
-    else if (inMode === 'creator')  return handleCreatorPlacement(cell);
-  }
+ 
 
   // Load grid from given level
   function loadLevel(level) {
@@ -320,9 +321,6 @@ document.addEventListener('DOMContentLoaded', () => {
       GRID CLICK HANDLING
      ===================== */
 
-  // CLICK on grid: either start placement or just redraw beam
-  gridEl.addEventListener('click', e => onGridClick(e));
-
   function handleMirrorPlacement(cell) {
     if (!cell) return;
 
@@ -342,24 +340,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function handleCreatorPlacement(cell) {
     if (inMode !== 'creator') return;
-    if (!cell) return;
+    if (!cell || !selectedType) return;
     const r = +cell.dataset.row, c = +cell.dataset.col;
 
-    // clear?
-    if (!selectedType) return;
-    if (layout[r][c] === `${selectedType.iconType}${selectedVariant||''}`) {
-      layout[r][c] = '.';
-    } else {
-      layout[r][c] = selectedType.iconType + (selectedVariant||'');
+    const code = selectedType.codePrefix
+            + (selectedVariant ? '-' + selectedVariant : '');
+
+    const isAdding = layout[r][c] !== code;
+
+    if (isAdding && counts[selectedType.key] >= selectedType.limit) {
+      // e.g. flash the button red, or just alert
+      alert(`You may only place up to ${selectedType.limit} ${selectedType.name}(s).`);
+      return;       // <-- bail out, no change
     }
-    if (selectedType !== 'empty') {
-      cell.dataset.type = 'empty'; // reset type to empty for creator mode
-    }
+
+    // toggle
+    layout[r][c] = (layout[r][c] === code) ? '.' : code;
+
+
     updateCounts();
     redraw();
     console.log(`handleCreatorPlacement() redraw()`)
 
   };
+
+   function onGridClick(e) {
+    const cell = e.target.closest('.cell');
+    if (!cell) return;
+    if (inMode === 'playing')       return handleMirrorPlacement(cell);
+    else if (inMode === 'creator')  return handleCreatorPlacement(cell);
+  }
+
+  // CLICK on grid: either start placement or just redraw beam
+  gridEl.addEventListener('click', e => onGridClick(e));
 
   /* ========================= 
       BEAM COLLISION HANDLING 
