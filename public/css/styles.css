@@ -1,27 +1,28 @@
+/* your existing #grid-container can go away, since you now have #board-play */
 #grid {
   display: grid;
-  grid-gap: 1px;  
+  grid-gap: 1px;
   width: 100%;
-  max-width: 600px;
-  aspect-ratio: 1;
-  margin: 0 auto;
+  height: 100%;            /* fill parent */
+  grid-auto-rows: 1fr;
   background: #6b6b6b;
   position: relative;
 }
 #beamCanvas {
-  width: 100%;
-  max-width: 600px;
-  aspect-ratio: 1;
-  background: transparent;
   position: absolute;
-  top: 0; left: 0;
+  top: 0; left: 0; width: 100%; height: 100%;
   pointer-events: none;
 }
+
 .cell {
   position: relative;
   background: #c2c2c2;
   overflow: hidden;
   transition: 0.2s, transform 0.1s;
+  /* aspect-ratio: 1 / 1; */
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
 }
 .cell:hover {
   background: rgb(100,167,100);
@@ -293,25 +294,38 @@
 .levelList li.locked {
   color: #999; cursor: default;
 }
-/* 2-column layout */
-#game-wrapper {
+/* Wrapper: sidebar on left, boards on right */
+#game-wrapper, #creator-wrapper {
   display: flex;
-  gap: 1rem;
-  max-width: 100%;
+  flex-direction: row;
+  align-items: flex-start;
+  height: 80%;
 }
-#sidebar {
-  flex: 0 0 100px; /* sidebar width */
+
+/* Sidebar styling */
+#sidebar, 
+#creator-aside {
   display: flex;
+  float: left;
   flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.5rem;
+  flex: 0 0 80px;
+  gap: 1rem;
+  background: #222;
+  color: #fff;
+  padding: 1rem;
+  box-sizing: border-box;
+  z-index: 10;
 }
-#grid-container {
-  position: relative;
+
+/* Board containers share the rest of the space */
+#board-play,
+#board-create {
   flex: 1;
+  position: relative;
   max-width: 600px;
-  aspect-ratio: 1;
-  background: #6b6b6b;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  margin: 0; /* flex handles horizontal layout */
 }
 
 /* Utility button */
@@ -356,6 +370,10 @@
   margin: .5em auto;
   padding: .75em 2em;
   font-size: 1.2rem;
+}
+
+#pauseBtn {
+  z-index: 300; /* sit above the board */
 }
 
 /* Pause Menu tabs */
@@ -559,3 +577,54 @@
 /*  =================================
     END OF KEY MODAL STYLES
     ================================ */
+
+/* ===============
+    LEVEL CREATOR
+   =============== */
+
+#create-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+#creator-grid {
+  display: grid;
+  grid-gap: 1px;
+  width: 100%;
+  height: 100%;
+  background: #6b6b6b;
+  position: relative;
+}
+
+.creator-palette {
+  list-style:none;
+  padding:0;
+  margin:1em 0;
+}
+.creator-item {
+  display:flex;
+  align-items:center;
+  gap:.5em;
+  padding:.3em;
+  cursor:pointer;
+  border:1px solid #444;
+  margin-bottom:.3em;
+}
+.creator-item.active {
+  background: #222;
+  color: #0f0;
+}
+.variant-bar {
+  display:flex;
+  gap:.5em;
+  margin-bottom:.5em;
+}
+.variant-bar.hidden { display:none; }
+.creator-controls {
+  margin-top:1em;
+  font-size:.9em;
+}
+.creator-controls button {
+  margin:0 .2em;
+}

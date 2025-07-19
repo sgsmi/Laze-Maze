@@ -1,3 +1,6 @@
+import { inMode,
+         modeToggle,
+         setMode } from './index.js'
 // TODO: Create master menu file that includes all menu-related functions
 // and handles the display of different menus like main menu, pause menu, etc.
 
@@ -18,23 +21,33 @@
 
 /**
  * Main Menu (title screen) wiring.
- * @param {{onPlay:Function, onLevels:Function, onHowTo:Function}} cfg
+ * @param {{onPlay:Function, onLevels:Function, onLevelCreator:Function, onHowTo:Function}} cfg
  */
-export function setupMainMenu({onPlay, onLevels, onHowTo}) {
+export function setupMainMenu({onPlay, onLevels, onLevelCreator, onHowTo}) {
     // Main menu elements
     const mainMenu          = document.getElementById('mainMenu');
     const btnPlay           = document.getElementById('btnPlay');
     const levelsBtnMain     = document.getElementById('btnLevelsMain');
     const howToBtn          = document.getElementById('btnHowTo');
+    const btnLevelCreator   = document.getElementById('btnLevelCreator')
+
+    // Level creator setup:
+    const creatorAside = document.querySelector('#creator-aside');
+    const createContainer = document.querySelector('#create-container');
 
     // 1) MAIN MENU  
-    function hideMainMenu() { mainMenu.classList.add('hidden'); }
     btnPlay.onclick = () => {
-        hideMainMenu();
+        modeToggle('main');
+        document.getElementById('sidebar').classList.remove('hidden')
         onPlay(); // start the first level
     };
     levelsBtnMain.onclick = () => {
         onLevels(); // show level select modal
+    };
+    // Levels tab buttons
+    btnLevelCreator.onclick = () => {
+        onLevelCreator();
+        // possbly hide other menus…
     };
     howToBtn.onclick = () => {
         onHowTo(); // show how-to modal
@@ -52,6 +65,7 @@ export function setupPauseMenu({ onResume, onRestart, onOpenKey, onSelectLevel }
     const btnResume   = document.getElementById('btnResume');
     const btnRestart  = document.getElementById('btnRestart');
     const btnKey      = document.getElementById('openKeyModal');
+    const btnToMainMenu = document.getElementById('btnToMainMenu');
     const tabs        = pauseMenu.querySelectorAll('.tabs button');
     const panels      = pauseMenu.querySelectorAll('.panel');
     const pauseLevels = document.getElementById('pauseLevelList');
@@ -59,6 +73,12 @@ export function setupPauseMenu({ onResume, onRestart, onOpenKey, onSelectLevel }
 
     let currentTab = 'general';
     let lastTab    = 'general';
+
+    function setPaused(on) {
+        // to-do: this is not reliable, implement 'paused' mode to handle pause state
+        // e.g. does not work if returning to main menu or pressing resume
+        pauseBtn.innerHTML = on ? '▶' : '❚❚';
+    }
 
     // Inner Modal
     // (used for displaying key, how-to, and other info)
@@ -82,18 +102,31 @@ export function setupPauseMenu({ onResume, onRestart, onOpenKey, onSelectLevel }
     });
 
     pauseBtn.addEventListener('click', () => {
+        if (inMode !== 'playing') return;
         pauseMenu.classList.toggle('hidden');
         if (!pauseMenu.classList.contains('hidden')) {
             activateTab('general');
-        }
+            setPaused(true);
+        } else setPaused(false);
     });
 
     // ESC toggles pause
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape') {
-            pauseMenu.classList.toggle('hidden');
-            if (!pauseMenu.classList.contains('hidden')) {
-                activateTab('general');
+            if (inMode === 'playing') {
+                pauseMenu.classList.toggle('hidden');
+                if (!pauseMenu.classList.contains('hidden')) {
+                    activateTab('general');
+                    setPaused(true);
+                }
+                else {
+                    setPaused(false);
+                }
+            }
+            if (inMode === 'creator') {
+                // add a yes/no prompt here
+                confirm('Exit level creator? Any unsaved changes will be lost.');
+                modeToggle('main')
             }
         }
     });
@@ -127,6 +160,14 @@ export function setupPauseMenu({ onResume, onRestart, onOpenKey, onSelectLevel }
         innerModal.classList.add('key-modal')
         onOpenKey();
     });
+    btnToMainMenu.addEventListener('click', () => {
+        // add a yes/no prompt here
+        if (!confirm('Return to main menu? Any unsaved progress will be lost.')) {
+            return;
+        }
+        modeToggle('main');
+        pauseMenu.classList.add('hidden');
+    });
 }
 
 /**
@@ -140,6 +181,7 @@ export function setupWinLoseModals ({ onLevels, onReplay, onNext, onRestart}) {
     const replayBtn    = document.getElementById('replayBtn');
     const levelsBtn    = document.getElementById('levelsBtn');
     const closeLS      = document.getElementById('closeLevelSelect');
+    const overlay      = document.getElementById('overlay');
 
     levelsBtn.addEventListener('click', () => {
         onLevels();

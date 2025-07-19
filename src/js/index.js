@@ -1,3 +1,19 @@
+/* MAIN TO-DOS
+Render a simple skyscraper = to the number of campaign levels
+  light each floor as new levels are unlocked
+  
+Game narrative: breaching a building, 
+  targets are mirrors which lead to the next floor
+  each level should start from the same cell as the last target
+
+New cell types:
+  Alarm cell - once tripped, the player has x amount of time to finish the level
+
+
+Helper function to display and hide all relevant items for a mode maybe progress on setMode
+
+*/
+
 import { syncCanvasSize, 
          traceBeam, 
          onResize, 
@@ -12,10 +28,7 @@ import { setupMainMenu,
          setupWinLoseModals} from './menus.js';
 import { levels,
          getLevelDims }   from './levels.js';
-
-// TODO: SYSTEMATICALLY REMOVE/REPLACE ANY UNUSED/UNNEEDED FUNCTIONS (namely menu-related)
-// IMPLEMENT NEW UNIVERSAL MENU SYSTEM, DO AWAY WITH OLD MODAL SYSTEM
-// -- continue implementation of universal inner modal system
+import { initLevelCreator } from './levelCreator.js';
 
 
 // FURTHER TODOs:
@@ -36,6 +49,63 @@ function getCookie(name) {
 
 // initialize unlockedUpTo from cookie (or zero)
 export let unlockedUpTo = parseInt(getCookie('unlockedUpTo')) || 0, currentLevel = 0;
+export let inMode = 'main'; // 'main' | 'playing' | 'creator'
+export function setMode(mode) {
+  inMode = mode
+}
+export function modeToggle(mode) {
+  `mode: main | playing | creator`
+  setMode(mode);
+  console.log(`============ ${mode} mode activated!`)
+
+  mainMenu      .classList.toggle('hidden', mode !== 'main');
+
+  playBoard     .classList.toggle('hidden', mode !== 'playing');
+  sidebar       .classList.toggle('hidden', mode !== 'playing');
+
+  createBoard   .classList.toggle('hidden', mode !== 'creator');
+  creatorAside  .classList.toggle('hidden', mode !== 'creator');
+  creatorGrid   .classList.toggle('hidden', mode !== 'creator');
+
+  switch (mode) {
+    case 'main':
+      break;
+    case 'playing':
+      // to-do - move beam logic here to ensure it is always reset
+      resetBeam();
+      let r, c = getLevelDims(levels[currentLevel]);
+      animateBeam( beamCanvas.getContext('2d'), r, c);
+      // possibly also load level, grid generation if it doesn't exist/isn't correct, etc.
+      break;
+    case 'creator':
+      syncCanvasSize(creatorGrid)
+      // only init level creator if it does not already exist
+      if (creatorGrid.children.length === 0) {
+        initLevelCreator({
+          aside:            creatorAside,
+          createContainer:  createContainer,
+          maxRows:          20,
+          maxCols:          20,
+          saveLevel:        lvl => { /* … */ },
+          loadLevel:        lvl => {
+            // e.g. loadLevelFromData(lvl);
+          }
+        });
+      }
+      break;
+    default:
+      console.warn(`Unknown mode ${mode}`);
+  }
+}
+
+const mainMenu = document.getElementById('mainMenu')
+const playBoard = document.getElementById('board-play')
+const createBoard = document.getElementById('board-create')
+const creatorAside = document.getElementById('creator-aside')
+const createContainer = document.querySelector('#create-container');
+const creatorGrid = createContainer.querySelector('#creator-grid');
+const pauseMenu = document.getElementById('pauseMenu')
+const sidebar = document.getElementById('sidebar');
 
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -56,15 +126,32 @@ document.addEventListener('DOMContentLoaded', () => {
   const winModal          = document.getElementById('winModal');
   const levelSelectModal  = document.getElementById('levelSelectModal');
   const levelList         = document.getElementById('levelList');
+  
+  // Level creator
+  if (!creatorGrid) {
+    creatorGrid = document.createElement('div');
+    creatorGrid.id = 'creator-grid';
+    createContainer.append(creatorGrid);
+  }
+
 
   // Main menu setup
   setupMainMenu({
-    onPlay()    {  startLevel(); },
+    onPlay()    {  
+      modeToggle('playing')
+      startLevel();
+      
+     },
     onLevels()  {
       // open level‐select modal (or master modal tab)
       // TODO: update this to use the new universal modal system
       refreshLevelList(levelList, levelSelectModal);
       levelSelectModal.classList.remove('hidden');
+    },
+    onLevelCreator()  {
+      modeToggle('creator');
+      // show creator aside and creator grid
+      
     },
     onHowTo()   { alert("TODO: show how-to screen");  } // show “how to play”—for now a simple alert
   });  
@@ -76,7 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
     onOpenKey()    {},
     onSelectLevel(container) {
       refreshLevelList(container, document.getElementById('pauseMenu'));
-    }
+    },
   });
 
   // Win / Lose modal setup
@@ -115,9 +202,12 @@ document.addEventListener('DOMContentLoaded', () => {
         li.classList.add('unlocked');
         li.addEventListener('click', () => {
           parentModal.classList.add('hidden');
-          document.getElementById('mainMenu').classList.add('hidden');
+          mainMenu.classList.add('hidden');
           currentLevel = i;
           startLevel(i);
+          if (inMode !== 'playing') {
+            modeToggle('playing');
+          }
         });
       } else {
         li.classList.add('locked');
@@ -144,10 +234,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // loadLevel(currentLevel);
   syncCanvasSize(beamCanvas);
   resetBeam();
-  animateBeam(ctx, rows, cols);
+  // animateBeam(ctx, rows, cols);
   
   window.addEventListener('resize', debounce(() => onResize(ctx, rows, cols), 100));
-
 
   // MIRROR PLACEMENT STATE
   let placingCell = null;
@@ -168,6 +257,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function onGridClick(e) {
+    const cell = e.target.closest('.cell');
+    if (!cell) return;
+    if (inMode === 'playing')       return handleMirrorPlacement(cell);
+    else if (inMode === 'creator')  return handleCreatorPlacement(cell);
+  }
+
   // Load grid from given level
   function loadLevel(level) {
     const layout = levels[level].layout;
@@ -177,10 +273,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   // clear any mirror state, load level and ensure animations are active
   function startLevel() {
-    exitPlacement();      // clear any mirror state
+    exitPlacement();
+    const { rows, cols } = getLevelDims(levels[currentLevel]);
     loadLevel(currentLevel);
     resetBeam();
-    setAnimating(true); // re-enable animation
+    setAnimating(true);
+    syncCanvasSize(beamCanvas);
+    animateBeam(ctx, rows, cols);
   }
   // Show overlay & cancel only during placement
   function enterPlacement(cell) {
@@ -217,8 +316,28 @@ document.addEventListener('DOMContentLoaded', () => {
       GRID CLICK HANDLING
      ===================== */
 
+  function handleMirrorPlacement(e) {
+    const cell = e.target.closest('.cell');
+    if (!cell) return;
+
+    // If in placement, ignore grid clicks (overlay is above)
+    if (placingCell) return;
+
+    // If mirror in clicked cell, clear and re-calculate beam
+    if (cell.dataset.type === 'mirror-slash' || cell.dataset.type === 'mirror-backslash') {
+      cell.dataset.type = 'empty';
+      updateBeamOnMapChange(ctx, rows, cols);
+      // traceBeam(ctx, rows, cols);
+      return;
+    }
+
+    // Only start placement on empty cells
+    if (cell.dataset.type === 'empty')  enterPlacement(cell);
+  }
+
   // CLICK on grid: either start placement or just redraw beam
   gridEl.addEventListener('click', e => {
+    if (inMode !== 'playing') return;
     const cell = e.target.closest('.cell');
     if (!cell) return;
 

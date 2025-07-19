@@ -1,3 +1,6 @@
+import { inMode,
+         modeToggle,
+         setMode } from './index.js'
 // TODO: Create master menu file that includes all menu-related functions
 // and handles the display of different menus like main menu, pause menu, etc.
 
@@ -18,23 +21,33 @@
 
 /**
  * Main Menu (title screen) wiring.
- * @param {{onPlay:Function, onLevels:Function, onHowTo:Function}} cfg
+ * @param {{onPlay:Function, onLevels:Function, onLevelCreator:Function, onHowTo:Function}} cfg
  */
-export function setupMainMenu({onPlay, onLevels, onHowTo}) {
+export function setupMainMenu({onPlay, onLevels, onLevelCreator, onHowTo}) {
     // Main menu elements
     const mainMenu          = document.getElementById('mainMenu');
     const btnPlay           = document.getElementById('btnPlay');
     const levelsBtnMain     = document.getElementById('btnLevelsMain');
     const howToBtn          = document.getElementById('btnHowTo');
+    const btnLevelCreator   = document.getElementById('btnLevelCreator')
+
+    // Level creator setup:
+    const creatorAside = document.querySelector('#creator-aside');
+    const createContainer = document.querySelector('#create-container');
 
     // 1) MAIN MENU  
-    function hideMainMenu() { mainMenu.classList.add('hidden'); }
     btnPlay.onclick = () => {
-        hideMainMenu();
+        modeToggle('main');
+        document.getElementById('sidebar').classList.remove('hidden')
         onPlay(); // start the first level
     };
     levelsBtnMain.onclick = () => {
         onLevels(); // show level select modal
+    };
+    // Levels tab buttons
+    btnLevelCreator.onclick = () => {
+        onLevelCreator();
+        // possbly hide other menus…
     };
     howToBtn.onclick = () => {
         onHowTo(); // show how-to modal
@@ -60,6 +73,10 @@ export function setupPauseMenu({ onResume, onRestart, onOpenKey, onSelectLevel }
     let currentTab = 'general';
     let lastTab    = 'general';
 
+    function setPaused(on) {
+        pauseBtn.innerHTML = on ? '▶' : '❚❚';
+    }
+
     // Inner Modal
     // (used for displaying key, how-to, and other info)
     // grab inner modal pieces
@@ -82,18 +99,34 @@ export function setupPauseMenu({ onResume, onRestart, onOpenKey, onSelectLevel }
     });
 
     pauseBtn.addEventListener('click', () => {
+        if (inMode !== 'playing') return;
         pauseMenu.classList.toggle('hidden');
         if (!pauseMenu.classList.contains('hidden')) {
             activateTab('general');
-        }
+            setPaused(true);
+        } else setPaused(false);
     });
 
     // ESC toggles pause
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape') {
-            pauseMenu.classList.toggle('hidden');
-            if (!pauseMenu.classList.contains('hidden')) {
-                activateTab('general');
+            if (inMode === 'playing') {
+                pauseMenu.classList.toggle('hidden');
+                if (!pauseMenu.classList.contains('hidden')) {
+                    activateTab('general');
+                    setPaused(true);
+                }
+                else {
+                    setPaused(false);
+                }
+            }
+            if (inMode === 'creator') {
+                // add a yes/no prompt here
+                aside.classList.add('hidden');
+                boardContainer.classList.remove('level-creator-active');
+                // show main menu again
+                document.getElementById('mainMenu').classList.remove('hidden');
+                setMode('main')
             }
         }
     });
@@ -127,6 +160,8 @@ export function setupPauseMenu({ onResume, onRestart, onOpenKey, onSelectLevel }
         innerModal.classList.add('key-modal')
         onOpenKey();
     });
+
+    
 }
 
 /**

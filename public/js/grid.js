@@ -50,3 +50,14 @@ export function createGrid(containerEl, rows, cols, layout) {
     console.log(`Grid created with ${rows} rows and ${cols} columns.`);
     console.log(`Created ${containerEl.children.length} cells (expected ${rows*cols})`);
 }
+
+export function initGrid({container, rows, cols, layout, onClick}) {
+  container.innerHTML = '';
+  createGrid(container, rows, cols, layout);
+  if (onClick) {
+    container.onclick = e => {
+      const cell = e.target.closest('.cell');
+      if (cell) onClick(cell);
+    };
+  }
+}
