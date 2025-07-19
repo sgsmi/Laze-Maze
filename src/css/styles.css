@@ -294,28 +294,38 @@
 .levelList li.locked {
   color: #999; cursor: default;
 }
-/* 2-column layout */
-#game-wrapper {
+/* Wrapper: sidebar on left, boards on right */
+#game-wrapper, #creator-wrapper {
   display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  height: 80%;
+}
+
+/* Sidebar styling */
+#sidebar, 
+#creator-aside {
+  display: flex;
+  float: left;
   flex-direction: column;
-  align-items: center;
-  width: 100%;
-  /* remove any fixed height so it grows with content */
-}
-#board-play, #board-create {
-  position: relative;
-  width: 100%;
-  max-width: 600px;
-  aspect-ratio: 1 / 1;
-  margin: 0 auto;
-}
-#sidebar {
-  flex: 0 0 80px;       /* fixed width */
-  gap: 0.5rem;
+  flex: 0 0 80px;
+  gap: 1rem;
   background: #222;
   color: #fff;
   padding: 1rem;
-  z-index: 10;           /* sit above boards if needed */
+  box-sizing: border-box;
+  z-index: 10;
+}
+
+/* Board containers share the rest of the space */
+#board-play,
+#board-create {
+  flex: 1;
+  position: relative;
+  max-width: 600px;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  margin: 0; /* flex handles horizontal layout */
 }
 
 /* Utility button */

@@ -3,14 +3,15 @@ import { inMode,
          modeToggle } from './index.js'
 
 const CELL_TYPES = [
-  { key: 'start',  name: 'Start',        multiple: false,  iconType: 'start',        variants: ['U','R','D','L'], limit: 1 },
-  { key: 'wall',   name: 'Wall',         multiple: true,   iconType: 'wall',         variants: [],         limit: Infinity },
-  { key: 'mirror', name: 'Mirror',       multiple: true,   iconType: 'mirror-slash', variants: ['/','\\'], limit: 5 },
-  { key: 'portal', name: 'Portal',       multiple: true,   iconType: 'portal',       variants: ['A','B','C'], limit: 3 },
-  { key: 'filter', name: 'Filter',       multiple: true,   iconType: 'filter',       variants: ['R','G','B'], limit: 3 },
-  { key: 'bomb',   name: 'Bomb',         multiple: true,   iconType: 'bomb',         variants: [],         limit: 5 },
-  { key: 'target', name: 'Target',       multiple: false,  iconType: 'target',       variants: [],         limit: 1 },
+  { key: 'start',  name: 'Start',        multiple: false,  codePrefix: 'S', iconType: 'start',        variants: ['U','R','D','L'], limit: 1 },
+  { key: 'wall',   name: 'Wall',         multiple: true,   codePrefix: '#', iconType: 'wall',         variants: [],         limit: Infinity },
+  { key: 'portal', name: 'Portal',       multiple: true,   codePrefix: 'P', iconType: 'portal',       variants: ['A','B','C'], limit: 3 },
+  { key: 'filter', name: 'Filter',       multiple: true,   codePrefix: 'F', iconType: 'filter',       variants: ['R','G','B'], limit: 3 },
+  { key: 'bomb',   name: 'Bomb',         multiple: true,   codePrefix: 'B', iconType: 'bomb',         variants: [],         limit: 5 },
+  { key: 'target', name: 'Target',       multiple: false,  codePrefix: 'T', iconType: 'target',       variants: [],         limit: 1 },
 ];
+
+const counts = {};
 
 export function initLevelCreator({
   aside, createContainer, maxRows = 10, maxCols = 10,
@@ -19,6 +20,7 @@ export function initLevelCreator({
   
   let rows = 10, cols = 10;
   let layout = createEmptyLayout(rows, cols);
+
   let selectedType = 'wall';
   let selectedVariant = null;
   
@@ -114,16 +116,24 @@ export function initLevelCreator({
   gridEl.addEventListener('click', e => {
     if (inMode !== 'creator') return;
     const cell = e.target.closest('.cell');
-    if (!cell) return;
+    if (!cell || !selectedType) return;
     const r = +cell.dataset.row, c = +cell.dataset.col;
 
-    // clear?
-    if (!selectedType) return;
-    if (layout[r][c] === `${selectedType.iconType}${selectedVariant||''}`) {
-      layout[r][c] = '.';
-    } else {
-      layout[r][c] = selectedType.iconType + (selectedVariant||'');
+    // compute the canonical code for this type+variant
+    const code = selectedType.codePrefix
+              + (selectedVariant ? '-' + selectedVariant : '');
+
+    const isAdding = layout[r][c] !== code;
+
+    if (isAdding && counts[selectedType.key] >= selectedType.limit) {
+      // e.g. flash the button red, or just alert
+      alert(`You may only place up to ${selectedType.limit} ${selectedType.name}(s).`);
+      return;       // <-- bail out, no change
     }
+
+    // toggle
+    layout[r][c] = (layout[r][c] === code) ? '.' : code;
+
     updateCounts();
     redraw();
     console.log(`gridEl eventListener redraw()`)
@@ -168,7 +178,8 @@ export function initLevelCreator({
 
   function updateCounts() {
     CELL_TYPES.forEach(type => {
-      const count = layout.flat().filter(cell => cell.startsWith(type.iconType)).length;
+      const count = layout.flat().filter(cell => cell.startsWith(type.codePrefix)).length;
+      counts[type.key] = count;
       aside.querySelectorAll('.creator-item').forEach(li => {
         if (li.querySelector('.icon').dataset.type === type.key) {
           li.querySelector('.count').textContent = `${count}/${type.limit}`;
@@ -180,5 +191,6 @@ export function initLevelCreator({
   function createEmptyLayout(r,c) {
     return Array.from({length:r},()=>Array.from({length:c},()=>'.'));
   }
+  updateCounts();
 }
 

@@ -14,6 +14,17 @@ Helper function to display and hide all relevant items for a mode maybe progress
 
 */
 
+
+
+//////
+/// TODO: Fix beam not generating on returning from level creator to game mode (it works if exiting to menu from game mode and returning)
+/// Level creator keeps board, add a reset button, warn on refresh or exit if level creator has unsaved changes
+/// implement level creator save button properly
+/// add default types for portal, start & filter cell placement for levelCreator & jazz up the UI
+/// cells are not showing in creatorAside, have the selection panel appear below the chosen cell type 
+/// with the correct version clearly highlighted, make sure the cell showing on the main dropdown is the
+/// selected type, and let the user close the dropdown if desired
+
 import { syncCanvasSize, 
          traceBeam, 
          onResize, 
@@ -22,7 +33,9 @@ import { syncCanvasSize,
          resetBeam,
          updateBeamOnMapChange }   from './beam.js';
 import { createGrid }     from './grid.js';
-import { debounce }       from './utils.js';
+import { debounce,
+         setCookie,
+         getCookie }       from './utils.js';
 import { setupMainMenu,
          setupPauseMenu, 
          setupWinLoseModals} from './menus.js';
@@ -34,18 +47,6 @@ import { initLevelCreator } from './levelCreator.js';
 // FURTHER TODOs:
 // - Add delay & animations so win & lose mechanics
 // - Consider a move counter, max mirrors, and a timed mode 
-
-// simple cookie getter/setter
-function setCookie(name, value, days = 365) {
-  const expires = new Date(Date.now() + days*864e5).toUTCString();
-  document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + expires + '; path=/';
-}
-function getCookie(name) {
-  return document.cookie.split('; ').reduce((r, c) => {
-    const [k, v] = c.split('=');
-    return k === name ? decodeURIComponent(v) : r;
-  }, '');
-}
 
 // initialize unlockedUpTo from cookie (or zero)
 export let unlockedUpTo = parseInt(getCookie('unlockedUpTo')) || 0, currentLevel = 0;

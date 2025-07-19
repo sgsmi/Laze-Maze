@@ -33,7 +33,6 @@
 /* WALL (solid block) */
 .cell[data-type="wall"] {
   background: #444;
-  pointer-events: none;
 }
 
 /* TARGET (gold star) */

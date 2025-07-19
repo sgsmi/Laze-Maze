@@ -125,8 +125,7 @@ export function setupPauseMenu({ onResume, onRestart, onOpenKey, onSelectLevel }
             }
             if (inMode === 'creator') {
                 // add a yes/no prompt here
-                confirm('Exit level creator? Any unsaved changes will be lost.');
-                modeToggle('main')
+                if (confirm('Exit level creator? Any unsaved changes will be lost.')) modeToggle('main');
             }
         }
     });

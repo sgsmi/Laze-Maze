@@ -62,10 +62,12 @@ export function modeToggle(mode) {
 
   playBoard     .classList.toggle('hidden', mode !== 'playing');
   sidebar       .classList.toggle('hidden', mode !== 'playing');
+  gameWrapper   .classList.toggle('hidden', mode !== 'playing');
 
   createBoard   .classList.toggle('hidden', mode !== 'creator');
   creatorAside  .classList.toggle('hidden', mode !== 'creator');
   creatorGrid   .classList.toggle('hidden', mode !== 'creator');
+  creatorWrapper.classList.toggle('hidden', mode !== 'creator');
 
   switch (mode) {
     case 'main':
@@ -73,8 +75,8 @@ export function modeToggle(mode) {
     case 'playing':
       // to-do - move beam logic here to ensure it is always reset
       resetBeam();
-      let r, c = getLevelDims(levels[currentLevel]);
-      animateBeam( beamCanvas.getContext('2d'), r, c);
+      const dims = getLevelDims(levels[currentLevel]);
+      animateBeam( beamCanvas.getContext('2d'), dims.rows, dims.cols);
       // possibly also load level, grid generation if it doesn't exist/isn't correct, etc.
       break;
     case 'creator':
@@ -106,6 +108,9 @@ const createContainer = document.querySelector('#create-container');
 const creatorGrid = createContainer.querySelector('#creator-grid');
 const pauseMenu = document.getElementById('pauseMenu')
 const sidebar = document.getElementById('sidebar');
+
+const gameWrapper = document.getElementById('game-wrapper');
+const creatorWrapper = document.getElementById('creator-wrapper');
 
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -305,8 +310,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!placingCell || !previewType) return;
     placingCell.dataset.type = previewType;
     exitPlacement();
-    updateBeamOnMapChange(ctx, rows, cols);
-    // traceBeam(ctx, rows, cols);
+    updateBeamOnMapChange();
   }
 
   // CLICK on cancel aborts
@@ -316,8 +320,10 @@ document.addEventListener('DOMContentLoaded', () => {
       GRID CLICK HANDLING
      ===================== */
 
-  function handleMirrorPlacement(e) {
-    const cell = e.target.closest('.cell');
+  // CLICK on grid: either start placement or just redraw beam
+  gridEl.addEventListener('click', e => onGridClick(e));
+
+  function handleMirrorPlacement(cell) {
     if (!cell) return;
 
     // If in placement, ignore grid clicks (overlay is above)
@@ -326,8 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // If mirror in clicked cell, clear and re-calculate beam
     if (cell.dataset.type === 'mirror-slash' || cell.dataset.type === 'mirror-backslash') {
       cell.dataset.type = 'empty';
-      updateBeamOnMapChange(ctx, rows, cols);
-      // traceBeam(ctx, rows, cols);
+      updateBeamOnMapChange();
       return;
     }
 
@@ -335,26 +340,26 @@ document.addEventListener('DOMContentLoaded', () => {
     if (cell.dataset.type === 'empty')  enterPlacement(cell);
   }
 
-  // CLICK on grid: either start placement or just redraw beam
-  gridEl.addEventListener('click', e => {
-    if (inMode !== 'playing') return;
-    const cell = e.target.closest('.cell');
+  function handleCreatorPlacement(cell) {
+    if (inMode !== 'creator') return;
     if (!cell) return;
+    const r = +cell.dataset.row, c = +cell.dataset.col;
 
-    // If in placement, ignore grid clicks (overlay is above)
-    if (placingCell) return;
-
-    // If mirror in clicked cell, clear and re-calculate beam
-    if (cell.dataset.type === 'mirror-slash' || cell.dataset.type === 'mirror-backslash') {
-      cell.dataset.type = 'empty';
-      updateBeamOnMapChange(ctx, rows, cols);
-      // traceBeam(ctx, rows, cols);
-      return;
+    // clear?
+    if (!selectedType) return;
+    if (layout[r][c] === `${selectedType.iconType}${selectedVariant||''}`) {
+      layout[r][c] = '.';
+    } else {
+      layout[r][c] = selectedType.iconType + (selectedVariant||'');
     }
+    if (selectedType !== 'empty') {
+      cell.dataset.type = 'empty'; // reset type to empty for creator mode
+    }
+    updateCounts();
+    redraw();
+    console.log(`handleCreatorPlacement() redraw()`)
 
-    // Only start placement on empty cells
-    if (cell.dataset.type === 'empty')  enterPlacement(cell);
-  });
+  };
 
   /* ========================= 
       BEAM COLLISION HANDLING 

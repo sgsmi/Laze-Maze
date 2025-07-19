@@ -19,7 +19,7 @@ export function initLevelCreator({
   
   let rows = 10, cols = 10;
   let layout = createEmptyLayout(rows, cols);
-  let selectedType = null;
+  let selectedType = 'wall';
   let selectedVariant = null;
   
 
@@ -114,16 +114,16 @@ export function initLevelCreator({
   gridEl.addEventListener('click', e => {
     if (inMode !== 'creator') return;
     const cell = e.target.closest('.cell');
-    if (!cell) return;
+    if (!cell || !selectedType) return;
     const r = +cell.dataset.row, c = +cell.dataset.col;
 
-    // clear?
-    if (!selectedType) return;
-    if (layout[r][c] === `${selectedType.iconType}${selectedVariant||''}`) {
-      layout[r][c] = '.';
-    } else {
-      layout[r][c] = selectedType.iconType + (selectedVariant||'');
-    }
+    // compute the canonical code for this type+variant
+    const code = selectedType.codePrefix
+              + (selectedVariant ? '-' + selectedVariant : '');
+
+    // toggle
+    layout[r][c] = (layout[r][c] === code) ? '.' : code;
+
     updateCounts();
     redraw();
     console.log(`gridEl eventListener redraw()`)

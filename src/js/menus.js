@@ -65,6 +65,7 @@ export function setupPauseMenu({ onResume, onRestart, onOpenKey, onSelectLevel }
     const btnResume   = document.getElementById('btnResume');
     const btnRestart  = document.getElementById('btnRestart');
     const btnKey      = document.getElementById('openKeyModal');
+    const btnToMainMenu = document.getElementById('btnToMainMenu');
     const tabs        = pauseMenu.querySelectorAll('.tabs button');
     const panels      = pauseMenu.querySelectorAll('.panel');
     const pauseLevels = document.getElementById('pauseLevelList');
@@ -74,6 +75,8 @@ export function setupPauseMenu({ onResume, onRestart, onOpenKey, onSelectLevel }
     let lastTab    = 'general';
 
     function setPaused(on) {
+        // to-do: this is not reliable, implement 'paused' mode to handle pause state
+        // e.g. does not work if returning to main menu or pressing resume
         pauseBtn.innerHTML = on ? '▶' : '❚❚';
     }
 
@@ -122,11 +125,8 @@ export function setupPauseMenu({ onResume, onRestart, onOpenKey, onSelectLevel }
             }
             if (inMode === 'creator') {
                 // add a yes/no prompt here
-                aside.classList.add('hidden');
-                boardContainer.classList.remove('level-creator-active');
-                // show main menu again
-                document.getElementById('mainMenu').classList.remove('hidden');
-                setMode('main')
+                confirm('Exit level creator? Any unsaved changes will be lost.');
+                modeToggle('main')
             }
         }
     });
@@ -160,8 +160,14 @@ export function setupPauseMenu({ onResume, onRestart, onOpenKey, onSelectLevel }
         innerModal.classList.add('key-modal')
         onOpenKey();
     });
-
-    
+    btnToMainMenu.addEventListener('click', () => {
+        // add a yes/no prompt here
+        if (!confirm('Return to main menu? Any unsaved progress will be lost.')) {
+            return;
+        }
+        modeToggle('main');
+        pauseMenu.classList.add('hidden');
+    });
 }
 
 /**
@@ -175,6 +181,7 @@ export function setupWinLoseModals ({ onLevels, onReplay, onNext, onRestart}) {
     const replayBtn    = document.getElementById('replayBtn');
     const levelsBtn    = document.getElementById('levelsBtn');
     const closeLS      = document.getElementById('closeLevelSelect');
+    const overlay      = document.getElementById('overlay');
 
     levelsBtn.addEventListener('click', () => {
         onLevels();
