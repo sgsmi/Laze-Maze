@@ -41,8 +41,6 @@ on bombs etc)
 
 
 import { syncCanvasSize, 
-         traceBeam, 
-         onResize, 
          animateBeam,
          setAnimating,
          resetBeam,
@@ -72,7 +70,7 @@ export function setMode(mode) {
 export function modeToggle(mode) {
   `mode: main | playing | creator`
   setMode(mode);
-  console.log(`============ ${mode} mode activated!`)
+  console.log(`============ modeToggle() called!\n============ ${mode} mode activated!`)
 
   mainMenu      .classList.toggle('hidden', mode !== 'main');
 
@@ -89,13 +87,12 @@ export function modeToggle(mode) {
     case 'main':
       break;
     case 'playing':
-      // to-do - move beam logic here to ensure it is always reset
-      syncCanvasSize(playBoard.querySelector('#beamCanvas'));
       startLevel(); // load the current level
-      setAnimating(true);
+      setAnimating(true); // start the beam animation
       break;
     case 'creator':
       syncCanvasSize(creatorGrid)
+      setAnimating(false); // stop any animations
       // only init level creator if it does not already exist
       if (creatorGrid.children.length === 0) {
         initLevelCreator({
@@ -104,9 +101,9 @@ export function modeToggle(mode) {
           maxRows:          20,
           maxCols:          20,
           saveLevel:        lvl => { /* … */ },
-          loadLevel:        lvl => {
-            // e.g. loadLevelFromData(lvl);
-          }
+          // loadLevel:        lvl => {
+          //   // e.g. loadLevelFromData(lvl);
+          // }
         });
       }
       break;
@@ -121,13 +118,12 @@ const createBoard = document.getElementById('board-create')
 const creatorAside = document.getElementById('creator-aside')
 const createContainer = document.querySelector('#create-container');
 const creatorGrid = createContainer.querySelector('#creator-grid');
-const pauseMenu = document.getElementById('pauseMenu')
 const sidebar = document.getElementById('sidebar');
 
 const gameWrapper = document.getElementById('game-wrapper');
 const creatorWrapper = document.getElementById('creator-wrapper');
 
-
+let beamCtx, beamRows, beamCols;
 
 // Mirror‐placement helpers
 let placingCell = null, previewType = null;
@@ -172,15 +168,15 @@ export function loadLevel(level) {
   gridEl.innerHTML = '';
   const { rows, cols } = getLevelDims(levels[level]);
   createGrid(gridEl, rows, cols, levels[level].layout);
+  console.log(`loadLevel(${level}) called, grid created with ${rows} rows and ${cols} cols`);
 }
 export function startLevel() {
   exitPlacement();
   loadLevel(currentLevel);
+  ({ rows: beamRows, cols: beamCols } = getLevelDims(levels[currentLevel]));
   resetBeam();
   setAnimating(true);
   syncCanvasSize(beamCanvas);
-  const { rows, cols } = getLevelDims(levels[currentLevel]);
-  animateBeam(beamCanvas.getContext('2d'), rows, cols);
 }
 
 
@@ -192,6 +188,14 @@ document.addEventListener('DOMContentLoaded', () => {
   overlay    = document.getElementById('overlay');
   cancelBtn  = document.getElementById('cancelPlacement');
   beamCanvas = document.getElementById('beamCanvas');
+  beamCtx    = beamCanvas.getContext('2d');
+  
+  // initialize dims for level 0
+  ({ rows: beamRows, cols: beamCols } = getLevelDims(levels[currentLevel]));
+  // kick off the very first animation
+  resetBeam();
+  setAnimating(true);
+  animateBeam(beamCtx, beamRows, beamCols);
 
   // grab level elements
   const { rows, cols }  = getLevelDims(levels[currentLevel]);
@@ -218,8 +222,6 @@ document.addEventListener('DOMContentLoaded', () => {
   setupMainMenu({
     onPlay()    {  
       modeToggle('playing')
-      startLevel();
-      
      },
     onLevels()  {
       // open level‐select modal (or master modal tab)
@@ -267,6 +269,7 @@ document.addEventListener('DOMContentLoaded', () => {
     onRestart() { // hide everything
       gameOverModal.classList.add('hidden');
       loadLevel(currentLevel);  // reload this level from scratch
+      console.log(`onRestart() called, reloading level ${currentLevel}`);
       setAnimating(true);       // re-enable animation
     }
   });
@@ -281,7 +284,9 @@ document.addEventListener('DOMContentLoaded', () => {
         li.classList.add('unlocked');
         li.addEventListener('click', () => {
           parentModal.classList.add('hidden');
-          mainMenu.classList.add('hidden');
+          if (parentModal === document.getElementById('pauseMenu')) {
+            pauseBtn.innerHTML = '❚❚';
+          }
           currentLevel = i;
           startLevel(i);
           if (inMode !== 'playing') {
@@ -310,10 +315,8 @@ document.addEventListener('DOMContentLoaded', () => {
   /* ====================
       GRID SETUP
      ==================== */
-  // syncCanvasSize(beamCanvas);
-  // resetBeam();
   
-  window.addEventListener('resize', debounce(() => onResize(ctx, rows, cols), 100));
+  window.addEventListener('resize', debounce(() => syncCanvasSize(ctx.canvas), 100));
 
   // CLICK on cancel aborts
   cancelBtn.addEventListener('click', exitPlacement);
@@ -408,4 +411,5 @@ document.addEventListener('DOMContentLoaded', () => {
       // etc…
     }
   });
+  // animateBeam(beamCanvas.getContext('2d'), rows, cols);
 });

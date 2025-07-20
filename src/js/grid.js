@@ -44,7 +44,7 @@ export function createGrid(containerEl, rows, cols, layout) {
     containerEl.style.gridTemplateRows    = `repeat(${rows}, 1fr)`;
 
     const { cellHeight } = getCellDimensions(containerEl, cols, rows);
-    containerEl.style.rowGap = '1px'; 
+
     Array.from(containerEl.children).forEach(cell => {  cell.style.minHeight = `${cellHeight}px`; });
     
     console.log(`Grid created with ${rows} rows and ${cols} columns.`);

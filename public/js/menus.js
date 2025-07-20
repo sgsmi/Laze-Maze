@@ -37,8 +37,6 @@ export function setupMainMenu({onPlay, onLevels, onLevelCreator, onHowTo}) {
 
     // 1) MAIN MENU  
     btnPlay.onclick = () => {
-        modeToggle('main');
-        document.getElementById('sidebar').classList.remove('hidden')
         onPlay(); // start the first level
     };
     levelsBtnMain.onclick = () => {
@@ -47,13 +45,11 @@ export function setupMainMenu({onPlay, onLevels, onLevelCreator, onHowTo}) {
     // Levels tab buttons
     btnLevelCreator.onclick = () => {
         onLevelCreator();
-        // possbly hide other menus…
     };
     howToBtn.onclick = () => {
         onHowTo(); // show how-to modal
     };
 }
-
 
 /**
  * Pause Menu (in‐game) wiring with tabs.
@@ -78,6 +74,10 @@ export function setupPauseMenu({ onResume, onRestart, onOpenKey, onSelectLevel }
         // to-do: this is not reliable, implement 'paused' mode to handle pause state
         // e.g. does not work if returning to main menu or pressing resume
         pauseBtn.innerHTML = on ? '▶' : '❚❚';
+        pauseMenu.classList.toggle('hidden', !on);
+        if (!on) {
+            activateTab('general');
+        }
     }
 
     // Inner Modal
@@ -103,25 +103,14 @@ export function setupPauseMenu({ onResume, onRestart, onOpenKey, onSelectLevel }
 
     pauseBtn.addEventListener('click', () => {
         if (inMode !== 'playing') return;
-        pauseMenu.classList.toggle('hidden');
-        if (!pauseMenu.classList.contains('hidden')) {
-            activateTab('general');
-            setPaused(true);
-        } else setPaused(false);
+        setPaused(pauseMenu.classList.contains('hidden'));
     });
 
     // ESC toggles pause
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape') {
             if (inMode === 'playing') {
-                pauseMenu.classList.toggle('hidden');
-                if (!pauseMenu.classList.contains('hidden')) {
-                    activateTab('general');
-                    setPaused(true);
-                }
-                else {
-                    setPaused(false);
-                }
+                setPaused(pauseMenu.classList.contains('hidden'));
             }
             if (inMode === 'creator') {
                 // add a yes/no prompt here
@@ -162,11 +151,11 @@ export function setupPauseMenu({ onResume, onRestart, onOpenKey, onSelectLevel }
     });
     btnToMainMenu.addEventListener('click', () => {
         // add a yes/no prompt here
-        if (!confirm('Return to main menu? Any unsaved progress will be lost.')) {
-            return;
-        }
+        // if (!confirm('Return to main menu? Any unsaved progress will be lost.')) {
+        //     return;
+        // }
         modeToggle('main');
-        pauseMenu.classList.add('hidden');
+        setPaused(pauseMenu.classList.contains('hidden'));
     });
 }
 

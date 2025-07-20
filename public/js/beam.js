@@ -30,7 +30,7 @@ function traceOneSegment(r, c, dr, dc, rows, cols, cw, ch, canvas) {
 
   // march until obstacle
   while (hr >= 0 && hr < rows && hc >= 0 && hc < cols) {
-    const cell = document.querySelector(`.cell[data-row="${hr}"][data-col="${hc}"]`);
+    const cell = document.querySelector( `#grid .cell[data-row="${hr}"][data-col="${hc}"]` );
     type = cell ? cell.dataset.type : 'empty';
     if (type !== 'empty' && type !== 'start') break;
     hr += dr; hc += dc;
@@ -61,7 +61,7 @@ function traceOneSegment(r, c, dr, dc, rows, cols, cw, ch, canvas) {
 function computeSegments(ctx, rows, cols) {
   const canvas = ctx.canvas;
   const { cellWidth: cw, cellHeight: ch } = getCellDimensions(canvas, cols, rows);
-  const startEl = document.querySelector('.cell[data-type="start"]');
+  const startEl = document.querySelector('#grid .cell[data-type="start"]');
   if (!startEl) return [];
 
   // initial beam origin & direction
@@ -107,11 +107,11 @@ function computeSegments(ctx, rows, cols) {
     // ** Portal teleport **
     if (seg.type === 'portal') {
       const thisId = document
-        .querySelector(`.cell[data-row="${seg.er}"][data-col="${seg.ec}"]`)
+        .querySelector(`#grid .cell[data-row="${seg.er}"][data-col="${seg.ec}"]`)
         .dataset.portalId;
 
       // find the *other* portal with same ID
-      const other = Array.from(document.querySelectorAll(`.cell[data-type="portal"][data-portal-id="${thisId}"]`))
+      const other = Array.from(document.querySelectorAll(`#grid .cell[data-type="portal"][data-portal-id="${thisId}"]`))
         .find(el => +el.dataset.row !== seg.er || +el.dataset.col !== seg.ec);
 
       if (other) {
@@ -250,23 +250,4 @@ export function animateBeam(ctx, rows, cols) {
   }
 
   requestAnimationFrame(() => animateBeam(ctx, rows, cols));
-}
-
-export function traceBeam(ctx, rows, cols) {
-  syncCanvasSize(ctx.canvas);
-  const segs = computeSegments(ctx, rows, cols);
-  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-  ctx.beginPath();
-  ctx.lineWidth   = 2;
-  ctx.strokeStyle = 'yellow';
-  for (const { sx, sy, ex, ey } of segs) {
-    ctx.moveTo(sx, sy);
-    ctx.lineTo(ex, ey);
-  }
-  ctx.stroke();
-}
-
-export function onResize(ctx, rows, cols) {
-  syncCanvasSize(ctx.canvas);
-  traceBeam(ctx, rows, cols);
 }
