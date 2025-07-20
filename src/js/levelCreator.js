@@ -1,13 +1,18 @@
 import { createGrid } from './grid.js';
 import { inMode,
          modeToggle } from './index.js'
+import { playerLevels,
+         getPlayerLevels,
+         builtIn } from './playerLevels.js';
+import { saveCustomLevels, 
+         loadCustomLevels } from './utils.js';
 
 const CELL_TYPES = [
   { key: 'start',  name: 'Start',        multiple: false,  codePrefix: 'S', iconType: 'start',        variants: ['U','R','D','L'], limit: 1 },
   { key: 'wall',   name: 'Wall',         multiple: true,   codePrefix: '#', iconType: 'wall',         variants: [],         limit: Infinity },
   { key: 'portal', name: 'Portal',       multiple: true,   codePrefix: 'P', iconType: 'portal',       variants: ['A','B','C'], limit: 3 },
   { key: 'filter', name: 'Filter',       multiple: true,   codePrefix: 'F', iconType: 'filter',       variants: ['R','G','B'], limit: 3 },
-  { key: 'bomb',   name: 'Bomb',         multiple: true,   codePrefix: 'B', iconType: 'bomb',         variants: [],         limit: 5 },
+  { key: 'bomb',   name: 'Bomb',         multiple: true,   codePrefix: 'B', iconType: 'bomb',         variants: [],         limit: Infinity },
   { key: 'target', name: 'Target',       multiple: false,  codePrefix: 'T', iconType: 'target',       variants: [],         limit: 1 },
 ];
 
@@ -15,6 +20,113 @@ export function initLevelCreator({
   aside, createContainer, maxRows = 10, maxCols = 10,
   saveLevel, loadLevel
 }) {
+
+  // --- inject name/desc inputs + save button ---
+  const form = document.createElement('div');
+  form.className = 'lc-save-form';
+  form.innerHTML = `
+    <input id="lc-name" placeholder="Enter level name" />
+    <textarea id="lc-desc" placeholder="Enter description (optional)"></textarea>
+    <button id="lc-save-btn">Save Level</button>
+  `;
+  aside.prepend(form);
+
+  const btnMyLevels      = aside.querySelector('#btnMyLevels');
+  const myLevelsPanel    = aside.querySelector('#myLevelsContainer');
+  const myLevelsList     = aside.querySelector('#myLevelsList');
+  const closeMyLevelsBtn = aside.querySelector('#closeMyLevels');
+
+  function refreshMyLevels() {
+    myLevelsList.innerHTML = '';
+    getPlayerLevels().forEach((lvl, i) => {
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <span class="ml-name">${lvl.name}</span>
+        <button class="ml-load" data-i="${i}">Load</button>
+        <button class="ml-del"  data-i="${i}">Delete</button>
+      `;
+      myLevelsList.append(li);
+    });
+  }
+
+  // Open panel
+  btnMyLevels.addEventListener('click', () => {
+    refreshMyLevels();
+    myLevelsPanel.classList.remove('hidden');
+  });
+
+  // Close panel
+  closeMyLevelsBtn.addEventListener('click', () => {
+    myLevelsPanel.classList.add('hidden');
+  });
+
+  // Delegate clicks inside the list
+  myLevelsList.addEventListener('click', e => {
+    const idx = parseInt(e.target.dataset.i, 10);
+    if (e.target.matches('.ml-load')) {
+      const lvl = playerLevels[idx];
+      // wipe current working layout, then:
+      nameInput.value = lvl.name;
+      descInput.value = lvl.description;
+      layout = JSON.parse(JSON.stringify(lvl.layout)); // deep copy
+      redraw();
+      updateCounts();  // recalculate “used/limit” for each CELL_TYPE
+      myLevelsPanel.classList.add('hidden');
+    }
+    if (e.target.matches('.ml-del')) {
+      const allLevels = getPlayerLevels();
+      const customStart = builtIn.length;
+      if (!confirm(`Delete “${allLevels[idx].name}”? This can’t be undone.`)) return;
+
+      // 1) Remove from the custom slice only
+      const customs = loadCustomLevels();
+      const customIdx = idx - customStart;
+      if (customIdx < 0) {
+        // trying to delete a built-in level? Bail.
+        alert("Cannot delete built-in levels.");
+        return;
+      }
+      customs.splice(customIdx, 1);
+      saveCustomLevels(customs);
+
+      // 2) Refresh the panel
+      refreshMyLevels();
+    }
+  });
+
+  const nameInput = form.querySelector('#lc-name');
+  const descInput = form.querySelector('#lc-desc');
+  const saveBtn   = form.querySelector('#lc-save-btn');
+
+  saveBtn.addEventListener('click', () => {
+    const name = nameInput.value.trim();
+    const desc = descInput.value.trim();
+
+    // 1) Validations
+    if (name.length < 4) {
+      return alert('Name must be at least 4 characters');
+    }
+    if (!/^[a-zA-Z0-9 _-]+$/.test(name)) {
+      return alert('Name may only contain letters, numbers, spaces, hyphens and underscores');
+    }
+    if (playerLevels.some(l=>l.name.toLowerCase()===name.toLowerCase())) {
+      return alert('Name already taken, please choose another');
+    }
+
+    // 2) Confirm dialog
+    if (!confirm(`Save level?\n\nName: ${name}\nDescription: ${desc||'(none)'}`)) {
+      return;
+    }
+
+    // 3) Build level data
+    const layoutCopy = layout.map(row => row.slice());
+    const newLevel = { name, description: desc, layout: layoutCopy };
+
+    // 4) Call app‐level save
+    saveLevel(newLevel);
+
+    alert('Level saved!');
+  });
   
   let rows = 10, cols = 10;
   let layout = createEmptyLayout(rows, cols);
@@ -65,6 +177,49 @@ export function initLevelCreator({
   exitBtn.onclick = () => {
     modeToggle('main');
   };
+  const btnBack = document.getElementById('btnBackToCreator');
+  const btnTest = document.createElement('button');
+  btnTest.textContent = '▶ Test this level';
+  btnTest.addEventListener('click', () => {
+    // 1) validate there is exactly one start
+    let startCount = 0;
+    layout.forEach(row => row.forEach(cell => { if (cell.startsWith('S-')) startCount++; }));
+    if (startCount !== 1) {
+      return alert('You must place exactly one Start cell to test.');
+    }
+    btnBack.classList.remove('hidden');
+    // 2) deep‐copy layout matrix so creator edits don’t bleed
+    const testLayout = layout.map(r => [...r]);
+    // 3) hand off to playing mode
+    modeToggle('playing', {
+      customLevel: {
+        name:        'Testing Level',
+        description: '',
+        layout:      testLayout
+      }});
+  });
+  aside.append(btnTest);
+
+  
+  btnBack.addEventListener('click', () => {
+    modeToggle('creator');
+    btnBack.classList.add('hidden');
+  });
+
+  const btnClear = document.createElement('button');
+  btnClear.textContent = '🗑 Clear Grid';
+  btnClear.addEventListener('click', () => {
+    if (!confirm('Erase every cell from your design? This cannot be undone.')) return;
+    // reset layout array to all “.” 
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        layout[r][c] = '.';
+      }
+    }
+    redraw();
+    updateCounts();
+  });
+  aside.append(btnClear);
 
   // 2) Variant-picker logic + live preview update
   function selectType(key, li) {
@@ -168,7 +323,6 @@ export function initLevelCreator({
     Cols: <button id="col-minus">–</button>
            <span id="col-count">${cols}</span>
            <button id="col-plus">+</button>
-    <button id="save-level">Save</button>
   `;
   aside.append(controls);
 
@@ -176,7 +330,6 @@ export function initLevelCreator({
   controls.querySelector('#row-minus').onclick = () => resize(rows-1, cols);
   controls.querySelector('#col-plus').onclick = () => resize(rows, cols+1);
   controls.querySelector('#col-minus').onclick = () => resize(rows, cols-1);
-  controls.querySelector('#save-level').onclick = () => saveLevel({ rows, cols, layout });
 
   // 4) Draw initial grid
   const gridEl = createContainer.querySelector('#creator-grid');

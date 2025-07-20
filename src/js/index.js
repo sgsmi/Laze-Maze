@@ -48,13 +48,17 @@ import { syncCanvasSize,
 import { createGrid }     from './grid.js';
 import { debounce,
          setCookie,
-         getCookie }       from './utils.js';
+         getCookie,
+         saveCustomLevels,
+         loadCustomLevels }       from './utils.js';
 import { setupMainMenu,
          setupPauseMenu, 
          setupWinLoseModals} from './menus.js';
 import { levels,
          getLevelDims }   from './levels.js';
 import { initLevelCreator } from './levelCreator.js';
+import { playerLevels,
+         builtIn } from './playerLevels.js';
 
 
 // FURTHER TODOs:
@@ -62,12 +66,13 @@ import { initLevelCreator } from './levelCreator.js';
 // - Consider a move counter, max mirrors, and a timed mode 
 
 // initialize unlockedUpTo from cookie (or zero)
+export let currentLevels = levels; 
 export let unlockedUpTo = parseInt(getCookie('unlockedUpTo')) || 0, currentLevel = 0;
 export let inMode = 'main'; // 'main' | 'playing' | 'creator'
 export function setMode(mode) {
   inMode = mode
 }
-export function modeToggle(mode) {
+export function modeToggle(mode, opts = {}) {
   `mode: main | playing | creator`
   setMode(mode);
   console.log(`============ modeToggle() called!\n============ ${mode} mode activated!`)
@@ -87,12 +92,24 @@ export function modeToggle(mode) {
     case 'main':
       break;
     case 'playing':
-      startLevel(); // load the current level
-      setAnimating(true); // start the beam animation
+      // default to campaign
+      let lvls = levels;
+      let idx  = opts.levelIndex ?? currentLevel;
+
+      // if they passed a customLevel, wrap it in a one‐element array
+      if (opts.customLevel) {
+        lvls = [ {
+          name:        opts.customLevel.name,
+          description: opts.customLevel.description || '',
+          layout:      opts.customLevel.layout
+        } ];
+        idx = 0;
+      }
+
+      startLevel(lvls, idx);
       break;
     case 'creator':
       syncCanvasSize(creatorGrid)
-      setAnimating(false); // stop any animations
       // only init level creator if it does not already exist
       if (creatorGrid.children.length === 0) {
         initLevelCreator({
@@ -100,7 +117,20 @@ export function modeToggle(mode) {
           createContainer:  createContainer,
           maxRows:          20,
           maxCols:          20,
-          saveLevel:        lvl => { /* … */ },
+          saveLevel(newLvl) {
+            // 1) append to localStorage
+            const customs = loadCustomLevels();
+            customs.push(newLvl);
+            saveCustomLevels(customs);
+
+            // 2) update runtime array
+            playerLevels.push(newLvl);  
+            // save playerlevels.js
+            // saveCustomLevels(playerLevels, 'playerLevels.js');
+            // to-do: add 'edit level' functionality with UI and save to playerLevels.js
+
+
+          },
           // loadLevel:        lvl => {
           //   // e.g. loadLevelFromData(lvl);
           // }
@@ -163,20 +193,27 @@ function confirmPlacement() {
   updateBeamOnMapChange();
 }
 // Level loading & starting
-export function loadLevel(level) {
+export function loadLevel(level, lvls = currentLevels) {
+  console.log(`loadLevel(${level}) called with ${lvls.length} levels`);
+  console.log(`Level dictionary:`, lvls);
   const gridEl = document.getElementById('grid');
   gridEl.innerHTML = '';
-  const { rows, cols } = getLevelDims(levels[level]);
-  createGrid(gridEl, rows, cols, levels[level].layout);
+  const { rows, cols } = getLevelDims(lvls[level]);
+  createGrid(gridEl, rows, cols, lvls[level].layout);
   console.log(`loadLevel(${level}) called, grid created with ${rows} rows and ${cols} cols`);
 }
-export function startLevel() {
+export function startLevel(lvls = currentLevels, levelIndex = currentLevel) {
   exitPlacement();
-  loadLevel(currentLevel);
+  console.log(`startLevel(${levelIndex}) called with ${lvls.length} levels`);
+  console.log(`Level dictionary:`, lvls);
+  currentLevels = lvls;
+  currentLevel  = levelIndex;
+  loadLevel(levelIndex, lvls);
+  syncCanvasSize(beamCanvas);
   ({ rows: beamRows, cols: beamCols } = getLevelDims(levels[currentLevel]));
   resetBeam();
   setAnimating(true);
-  syncCanvasSize(beamCanvas);
+  
 }
 
 
@@ -234,6 +271,11 @@ document.addEventListener('DOMContentLoaded', () => {
       // show creator aside and creator grid
       
     },
+    onPlayerLevels() {
+      // show player levels modal
+      refreshLevelList(levelList, levelSelectModal, playerLevels);
+      levelSelectModal.classList.remove('hidden');
+    },
     onHowTo()   { alert("TODO: show how-to screen");  } // show “how to play”—for now a simple alert
   });  
 
@@ -275,12 +317,12 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // populate level list within specified container
-  function refreshLevelList(levelContainer, parentModal) {
+  function refreshLevelList(levelContainer, parentModal, lvls = currentLevels) {
     levelContainer.innerHTML = '';
-    levels.forEach((lvl, i) => {
+    lvls.forEach((lvl, i) => {
       const li = document.createElement('li');
       li.textContent = `${i+1}. ${lvl.name} — ${lvl.description}`;
-      if (i <= unlockedUpTo) {
+      if (i <= unlockedUpTo || lvls !== levels) {
         li.classList.add('unlocked');
         li.addEventListener('click', () => {
           parentModal.classList.add('hidden');
@@ -288,9 +330,11 @@ document.addEventListener('DOMContentLoaded', () => {
             pauseBtn.innerHTML = '❚❚';
           }
           currentLevel = i;
-          startLevel(i);
+          
           if (inMode !== 'playing') {
-            modeToggle('playing');
+            modeToggle('playing', lvls);
+          } else {
+            startLevel(lvls);
           }
         });
       } else {
@@ -394,15 +438,19 @@ document.addEventListener('DOMContentLoaded', () => {
         gameOverModal.classList.remove('hidden');
         break;
       case 'target':
-        unlockedUpTo = Math.max(unlockedUpTo, currentLevel + 1);
-        setCookie('unlockedUpTo', unlockedUpTo);
-        // stop the animation loop
-        setAnimating(false);
-        overlay.classList.remove('hidden');
-        winModal.classList.remove('hidden');
-        if (currentLevel === levels.length - 1) {
-          // Last level completed, keep next level button hidden
-          document.getElementById('nextLevelBtn').classList.add('hidden');
+        // To-do: add handling for playerLevels and testing from creator mode
+        // To-do: add win animation
+        if (document.getElementById('exitCreatorBtn').classList.contains('hidden')) {
+          unlockedUpTo = Math.max(unlockedUpTo, currentLevel + 1);
+          setCookie('unlockedUpTo', unlockedUpTo);
+          // stop the animation loop
+          setAnimating(false);
+          overlay.classList.remove('hidden');
+          winModal.classList.remove('hidden');
+          if (currentLevel === levels.length - 1) {
+            // Last level completed, keep next level button hidden
+            document.getElementById('nextLevelBtn').classList.add('hidden');
+          }
         }
         break;
       case 'portal':

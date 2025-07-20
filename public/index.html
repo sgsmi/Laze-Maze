@@ -11,6 +11,8 @@
       <button id="btnPlay">Play</button>
       <button id="btnLevelsMain">Levels</button>
       <button id="btnLevelCreator">Level Creator</button>
+      <button id="btnPlayerLevels">Player Levels</button>
+      <button id="btnSettings">Settings</button>
       <button id="btnHowTo">How to Play</button>
     </div>
   </div>
@@ -61,10 +63,17 @@
   
   <aside id="sidebar" class="hidden">
     <button id="pauseBtn" class="utility-btn">❚❚</button>
+    <button id="btnBackToCreator" class="hidden">← Back to Editor</button>
     <div id="metrics"></div>
   </aside>
   <aside id="creator-aside" class="hidden">
     <button id="exitCreator" class="utility-btn">← Back to Menu</button>
+    <button id="btnMyLevels" class="creator-control">📂 My Levels</button>
+    <div id="myLevelsContainer" class="hidden">
+      <h3>My Levels</h3>
+      <ul id="myLevelsList"></ul>
+      <button id="closeMyLevels">Close</button>
+    </div>
   </aside>
   <div id="game-wrapper" class="hidden">
     

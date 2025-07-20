@@ -4,7 +4,9 @@
 // to-do: add 'player-made levels' section in level select modal
 // note: max 2 portals per level, max 1 target, max 1 start
 
-export const playerLevels = [
+import { loadCustomLevels } from "./utils.js";
+
+export const builtIn = [
   // Key:
   // 'S-[suffix]' = start cell 
   //      'D' = start down
@@ -61,3 +63,13 @@ export const playerLevels = [
   },
   // more levels…
 ];
+
+export const playerLevels = [
+  ...builtIn,
+  ...loadCustomLevels('playerLevels') // load player-created levels from localStorage
+]
+
+export function getPlayerLevels() {
+  const custom = loadCustomLevels();
+  return [...builtIn, ...custom];
+}

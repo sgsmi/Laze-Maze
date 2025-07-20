@@ -24,3 +24,15 @@ export function getCookie(name) {
     return k === name ? decodeURIComponent(v) : r;
   }, '');
 }
+
+export function loadCustomLevels() {
+  try {
+    return JSON.parse(localStorage.getItem('customLevels') || '[]');
+  } catch {
+    return [];
+  }
+}
+
+export function saveCustomLevels(levels) {
+  localStorage.setItem('customLevels', JSON.stringify(levels));
+}
