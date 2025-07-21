@@ -101,7 +101,6 @@ export function setupPauseMenu({ onResume, onRestart, onOpenKey, onSelectLevel }
     }
 
     innerBack.addEventListener('click', () => {
-        // clear out whatever you put in there (optional)
         innerBody.innerHTML = '';
         activateTab(lastTab);
     });

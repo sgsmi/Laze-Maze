@@ -107,6 +107,7 @@ export function modeToggle(mode, opts = {}) {
       }
 
       startLevel(lvls, idx);
+      animateBeam(beamCtx)
       break;
     case 'creator':
       syncCanvasSize(creatorGrid)
@@ -210,7 +211,7 @@ export function startLevel(lvls = currentLevels, levelIndex = currentLevel) {
   currentLevel  = levelIndex;
   loadLevel(levelIndex, lvls);
   syncCanvasSize(beamCanvas);
-  ({ rows: beamRows, cols: beamCols } = getLevelDims(levels[currentLevel]));
+  ({ rows: beamRows, cols: beamCols } = getLevelDims(currentLevels[currentLevel]));
   resetBeam();
   setAnimating(true);
   
@@ -232,7 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // kick off the very first animation
   resetBeam();
   setAnimating(true);
-  animateBeam(beamCtx, beamRows, beamCols);
+  animateBeam(beamCtx);
 
   // grab level elements
   const { rows, cols }  = getLevelDims(levels[currentLevel]);
@@ -440,7 +441,7 @@ document.addEventListener('DOMContentLoaded', () => {
       case 'target':
         // To-do: add handling for playerLevels and testing from creator mode
         // To-do: add win animation
-        if (document.getElementById('exitCreatorBtn').classList.contains('hidden')) {
+        if (document.getElementById('btnBackToCreator').classList.contains('hidden')) {
           unlockedUpTo = Math.max(unlockedUpTo, currentLevel + 1);
           setCookie('unlockedUpTo', unlockedUpTo);
           // stop the animation loop

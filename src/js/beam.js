@@ -1,4 +1,7 @@
 import { getCellDimensions } from './utils.js';
+import { currentLevels, currentLevel } from './index.js';
+import { getLevelDims } from './levels.js';
+
 
 // Beam travel speed in pixels per millisecond
 const BEAM_SPEED = 0.4;
@@ -159,8 +162,9 @@ export function updateBeamOnMapChange() {
 }
 
 // main animation loop
-export function animateBeam(ctx, rows, cols) {
+export function animateBeam(ctx) {
   syncCanvasSize(ctx.canvas);
+  const { rows, cols } = getLevelDims(currentLevels[currentLevel])
   const now = performance.now();
   const dt  = lastTimestamp ? now - lastTimestamp : 0;
   lastTimestamp = now;
@@ -249,5 +253,5 @@ export function animateBeam(ctx, rows, cols) {
     }
   }
 
-  requestAnimationFrame(() => animateBeam(ctx, rows, cols));
+  requestAnimationFrame(() => animateBeam(ctx));
 }

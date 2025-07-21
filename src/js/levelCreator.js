@@ -69,6 +69,10 @@ export function initLevelCreator({
       nameInput.value = lvl.name;
       descInput.value = lvl.description;
       layout = JSON.parse(JSON.stringify(lvl.layout)); // deep copy
+      rows = layout.length;
+      cols = layout[0].length;
+      controls.querySelector('#row-count').textContent = rows;
+      controls.querySelector('#col-count').textContent = cols;
       redraw();
       updateCounts();  // recalculate “used/limit” for each CELL_TYPE
       myLevelsPanel.classList.add('hidden');
@@ -316,21 +320,23 @@ export function initLevelCreator({
   // 3) Rows/Cols rockers
   const controls = document.createElement('div');
   controls.className = 'creator-controls';
-  controls.innerHTML = `
-    Rows: <button id="row-minus">–</button>
-           <span id="row-count">${rows}</span>
-           <button id="row-plus">+</button>
-    Cols: <button id="col-minus">–</button>
-           <span id="col-count">${cols}</span>
-           <button id="col-plus">+</button>
-  `;
-  aside.append(controls);
-
+  function setupRowColControls(r, c) {
+    controls.innerHTML = `
+      Rows: <button id="row-minus">–</button>
+            <span id="row-count">${r}</span>
+            <button id="row-plus">+</button>
+      Cols: <button id="col-minus">–</button>
+            <span id="col-count">${c}</span>
+            <button id="col-plus">+</button>`
+  
   controls.querySelector('#row-plus').onclick = () => resize(rows+1, cols);
   controls.querySelector('#row-minus').onclick = () => resize(rows-1, cols);
   controls.querySelector('#col-plus').onclick = () => resize(rows, cols+1);
   controls.querySelector('#col-minus').onclick = () => resize(rows, cols-1);
+  };
 
+  setupRowColControls(rows, cols);
+  aside.append(controls);
   // 4) Draw initial grid
   const gridEl = createContainer.querySelector('#creator-grid');
   if (!gridEl) {
@@ -352,8 +358,10 @@ export function initLevelCreator({
             + (selectedVariant ? '-' + selectedVariant : '');
 
     const isAdding = layout[r][c] !== code;
-
-    if (isAdding && counts[selectedType.key] >= selectedType.limit) {
+    
+    // block if trying to add a cell that exceeds its limit
+    // allow replacing existing cells with variants of the same type
+    if (isAdding && counts[selectedType.key] >= selectedType.limit && cell.dataset.type !== selectedType.key) {
       // e.g. flash the button red, or just alert
       alert(`You may only place up to ${selectedType.limit} ${selectedType.name}(s).`);
       return;       // <-- bail out, no change
