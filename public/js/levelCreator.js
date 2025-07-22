@@ -16,6 +16,8 @@ const CELL_TYPES = [
   { key: 'target', name: 'Target',       multiple: false,  codePrefix: 'T', iconType: 'target',       variants: [],         limit: 1 },
 ];
 
+let maxMirrors = 10; // default to 10
+
 export function initLevelCreator({
   aside, createContainer, maxRows = 10, maxCols = 10,
   saveLevel, loadLevel
@@ -73,7 +75,6 @@ export function initLevelCreator({
       cols = layout[0].length;
       controls.querySelector('#row-count').textContent = rows;
       controls.querySelector('#col-count').textContent = cols;
-      
       redraw();
       updateCounts();  // recalculate “used/limit” for each CELL_TYPE
       myLevelsPanel.classList.add('hidden');
@@ -125,7 +126,7 @@ export function initLevelCreator({
 
     // 3) Build level data
     const layoutCopy = layout.map(row => row.slice());
-    const newLevel = { name, description: desc, layout: layoutCopy };
+    const newLevel = { name, description: desc, maxMirrors: maxMirrors, layout: layoutCopy };
 
     // 4) Call app‐level save
     saveLevel(newLevel);
@@ -200,8 +201,11 @@ export function initLevelCreator({
       customLevel: {
         name:        'Testing Level',
         description: '',
+        maxMirrors: maxMirrors || rows * cols, // default to no limit
         layout:      testLayout
-      }});
+      }
+    });
+    console.log(`Custom level created with max mirrors: ${maxMirrors}`);  
   });
   aside.append(btnTest);
 
@@ -323,17 +327,40 @@ export function initLevelCreator({
   controls.className = 'creator-controls';
   function setupRowColControls(r, c) {
     controls.innerHTML = `
-      Rows: <button id="row-minus">–</button>
-            <span id="row-count">${r}</span>
-            <button id="row-plus">+</button>
-      Cols: <button id="col-minus">–</button>
-            <span id="col-count">${c}</span>
-            <button id="col-plus">+</button>`
+    <div class="creator-controls-header">Grid Size</div>
+      <div class="creator-controls-body">
+        Rows: <button id="row-minus">–</button>
+              <span id="row-count">${r}</span>
+              <button id="row-plus">+</button>
+        Cols: <button id="col-minus">–</button>
+              <span id="col-count">${c}</span>
+              <button id="col-plus">+</button>
+      </div>
+      <div class="creator-controls-footer">
+        <input type="number" id="max-mirrors" placeholder="Max Mirrors" value="${maxMirrors}" min="0" />  
+      </div>`
+
+    // 1) Update maxMirrors on input change
+    const maxMirrorsInput = controls.querySelector('#max-mirrors');
+    maxMirrorsInput.addEventListener('input', e => {
+      const val = e.target.value.trim();
+      if (val === '') {
+        maxMirrors = rows * cols; // reset to no limit
+      } else {
+        const num = parseInt(val, 10);
+        if (isNaN(num) || num < 0) {
+          alert('Please enter a valid number for max mirrors');
+          return;
+        }
+        maxMirrors = num;
+      }
+      console.log(`Max mirrors set to: ${maxMirrors}`);
+    });
   
-  controls.querySelector('#row-plus').onclick = () => resize(rows+1, cols);
-  controls.querySelector('#row-minus').onclick = () => resize(rows-1, cols);
-  controls.querySelector('#col-plus').onclick = () => resize(rows, cols+1);
-  controls.querySelector('#col-minus').onclick = () => resize(rows, cols-1);
+    controls.querySelector('#row-plus').onclick = () => resize(rows+1, cols);
+    controls.querySelector('#row-minus').onclick = () => resize(rows-1, cols);
+    controls.querySelector('#col-plus').onclick = () => resize(rows, cols+1);
+    controls.querySelector('#col-minus').onclick = () => resize(rows, cols-1)
   };
 
   setupRowColControls(rows, cols);

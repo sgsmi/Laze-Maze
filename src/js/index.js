@@ -1,50 +1,9 @@
-/* MAIN TO-DOS
-Render a simple skyscraper = to the number of campaign levels
-  light each floor as new levels are unlocked
-  
-Game narrative: breaching a building, 
-  targets are mirrors which lead to the next floor
-  each level should start from the same cell as the last target
-
-New cell types:
-  Alarm cell - once tripped, the player has x amount of time to finish the level
-
-Some sort of points system for style, e.g. multipliers for longest beam 
-without intervention (i.e. if the user plans out their route beforehand 
-and then places the final mirror and lets it run, points for near misses
-on bombs etc)
-*/
-
-
-
-//////
-/// TODO: Fix beam not generating on returning from level creator to game mode (it works if exiting to menu from game mode and returning
-/// but never after level creator, even if the game was initialised first with a functioning beam)
-/// Level creator keeps board, add a reset button, warn on refresh or exit if level creator has unsaved changes
-/// implement level creator save button properly
-/// add default types for portal, start & filter cell placement for levelCreator & jazz up the UI
-/// cells are not showing in creatorAside, have the selection panel appear below the chosen cell type 
-/// with the correct version clearly highlighted, make sure the cell showing on the main dropdown is the
-/// selected type, and let the user close the dropdown if desired
-
-// Level creator fixes needed: if replacing a cell with another variant 
-// whilst at max count, it blocks the user from placing the new variant, fix
-
-// portal type and filter type on level creator are not set by default
-// and do not show any variant on load in, fix
-
-// introduce pre-level mission briefing screen with text animation,
-// e.g. "Your mission is to breach the building and reach the target
-// with a beam of light, using mirrors to redirect the beam. Avoid traps
-// and obstacles, and use the available tools wisely. Good luck!"
-
-
-
 import { syncCanvasSize, 
          animateBeam,
          setAnimating,
          resetBeam,
-         updateBeamOnMapChange }   from './beam.js';
+         updateBeamOnMapChange,
+         getVisitedCells  }   from './beam.js';
 import { createGrid }     from './grid.js';
 import { debounce,
          setCookie,
@@ -61,13 +20,20 @@ import { playerLevels,
          builtIn } from './playerLevels.js';
 
 
-// FURTHER TODOs:
-// - Add delay & animations so win & lose mechanics
-// - Consider a move counter, max mirrors, and a timed mode 
-
 // initialize unlockedUpTo from cookie (or zero)
 export let currentLevels = levels; 
-export let unlockedUpTo = parseInt(getCookie('unlockedUpTo')) || 0, currentLevel = 0;
+export let currentLevel = 0;
+let mirrorsLeft = 10; // default to 10 mirrors
+let levelStats = JSON.parse(getCookie('levelStats') || '{}');
+let movesUsed = 0;
+export let nearMissCount = 0;
+export let unlockedUpTo = Math.max(
+  0,
+  ...Object.keys(levelStats)
+    .filter(k => levelStats[k].unlocked)
+    .map(k => Number(k) + 1)
+);
+
 export let inMode = 'main'; // 'main' | 'playing' | 'creator'
 export function setMode(mode) {
   inMode = mode
@@ -88,12 +54,17 @@ export function modeToggle(mode, opts = {}) {
   creatorGrid   .classList.toggle('hidden', mode !== 'creator');
   creatorWrapper.classList.toggle('hidden', mode !== 'creator');
 
+  gameOverModal.classList.add('hidden');
+  winModal.classList.add('hidden');
+
   switch (mode) {
     case 'main':
+
       break;
     case 'playing':
-      // default to campaign
-      let lvls = levels;
+
+      // default to current selected levels
+      let lvls = currentLevels;
       let idx  = opts.levelIndex ?? currentLevel;
 
       // if they passed a customLevel, wrap it in a one‐element array
@@ -101,9 +72,16 @@ export function modeToggle(mode, opts = {}) {
         lvls = [ {
           name:        opts.customLevel.name,
           description: opts.customLevel.description || '',
+          maxMirrors:  opts.customLevel.maxMirrors,
           layout:      opts.customLevel.layout
         } ];
         idx = 0;
+      }
+
+      // if user passed playerLevels, use those instead
+      if (opts.customLevels) { 
+        lvls = opts.customLevels;
+        idx = opts.levelIndex ?? 0;
       }
 
       startLevel(lvls, idx);
@@ -150,6 +128,7 @@ const creatorAside = document.getElementById('creator-aside')
 const createContainer = document.querySelector('#create-container');
 const creatorGrid = createContainer.querySelector('#creator-grid');
 const sidebar = document.getElementById('sidebar');
+const btnCloseLevelSelect = document.getElementById('closeLevelSelect');
 
 const gameWrapper = document.getElementById('game-wrapper');
 const creatorWrapper = document.getElementById('creator-wrapper');
@@ -159,7 +138,9 @@ let beamCtx, beamRows, beamCols;
 // Mirror‐placement helpers
 let placingCell = null, previewType = null;
 export function exitPlacement() {
-  if (placingCell) placingCell.classList.remove('selected','preview-slash','preview-backslash');
+  if (placingCell) {
+    placingCell.classList.remove('selected','preview-slash','preview-backslash');
+  }
   placingCell = null; previewType = null;
   overlay.classList.add('hidden');
   cancelBtn.classList.add('hidden');
@@ -168,6 +149,7 @@ export function exitPlacement() {
 }
 function enterPlacement(cell) {
   placingCell = cell; previewType = null;
+  if (mirrorsLeft <= 0) { alert("No mirrors left!"); return; }
   cell.classList.add('selected');
   overlay.classList.remove('hidden');
   cancelBtn.classList.remove('hidden');
@@ -189,8 +171,14 @@ function onMouseMove(e) {
 }
 function confirmPlacement() {
   if (!placingCell || !previewType) return;
+  
+  mirrorsLeft--;
+  movesUsed++;
+  updateSidebarMetrics();
+
   placingCell.dataset.type = previewType;
   exitPlacement();
+
   updateBeamOnMapChange();
 }
 // Level loading & starting
@@ -205,6 +193,10 @@ export function loadLevel(level, lvls = currentLevels) {
 }
 export function startLevel(lvls = currentLevels, levelIndex = currentLevel) {
   exitPlacement();
+  mirrorsLeft = (typeof lvls[levelIndex].maxMirrors === 'number') ? lvls[levelIndex].maxMirrors : Infinity;
+  movesUsed = 0;
+  nearMissCount = 0;
+  updateSidebarMetrics();
   console.log(`startLevel(${levelIndex}) called with ${lvls.length} levels`);
   console.log(`Level dictionary:`, lvls);
   currentLevels = lvls;
@@ -215,6 +207,12 @@ export function startLevel(lvls = currentLevels, levelIndex = currentLevel) {
   resetBeam();
   setAnimating(true);
   
+}
+
+export function updateSidebarMetrics() {
+  document.getElementById('movesUsed').textContent        = `moves used ${movesUsed}`;
+  document.getElementById('nearMissCount').textContent    = `near misses ${nearMissCount}`;
+  document.getElementById('mirrorsRemaining').textContent = mirrorsLeft === Infinity ? `Mirrors left: ∞` : `Mirrors left: ${mirrorsLeft}`;
 }
 
 
@@ -247,7 +245,28 @@ document.addEventListener('DOMContentLoaded', () => {
   const winModal          = document.getElementById('winModal');
   const levelSelectModal  = document.getElementById('levelSelectModal');
   const levelList         = document.getElementById('levelList');
-  
+  const levelTabs             = document.querySelectorAll('#levelSelectTabs button');
+
+  levelTabs.forEach(btn => {
+    btn.addEventListener('click', () => {
+      // highlight
+      levelTabs.forEach(b => b.classList.toggle('active', b === btn));
+      // refresh list
+      if (btn.dataset.type === 'campaign') {
+        refreshLevelList(levelList, levelSelectModal, levels);
+      } else {
+        refreshLevelList(levelList, levelSelectModal, playerLevels);
+      }
+    });
+  });
+
+  // 2) “Levels” button in main menu should open modal on Campaign tab:
+  document.getElementById('btnLevelsMain').onclick = () => {
+    levelSelectModal.classList.remove('hidden');
+    // simulate campaign‐tab click
+    document.querySelector('#levelSelectTabs button[data-type="campaign"]').click();
+  };
+
   // Level creator
   if (!creatorGrid) {
     creatorGrid = document.createElement('div');
@@ -264,30 +283,49 @@ document.addEventListener('DOMContentLoaded', () => {
     onLevels()  {
       // open level‐select modal (or master modal tab)
       // TODO: update this to use the new universal modal system
-      refreshLevelList(levelList, levelSelectModal);
+      refreshLevelList(levelList, levelSelectModal, levels);
       levelSelectModal.classList.remove('hidden');
+      // ensure campaign tab is active
+      document.querySelector('#levelSelectTabs button[data-type="campaign"]').click();
     },
     onLevelCreator()  {
       modeToggle('creator');
       // show creator aside and creator grid
       
     },
-    onPlayerLevels() {
-      // show player levels modal
-      refreshLevelList(levelList, levelSelectModal, playerLevels);
-      levelSelectModal.classList.remove('hidden');
-    },
+    // onPlayerLevels() {
+    //   // show player levels modal
+    //   refreshLevelList(levelList, levelSelectModal, playerLevels);
+    //   levelSelectModal.classList.remove('hidden');
+    // },
     onHowTo()   { alert("TODO: show how-to screen");  } // show “how to play”—for now a simple alert
   });  
 
   // Pause menu setup
   setupPauseMenu({
     onResume()     { setAnimating(true); },
-    onRestart()    { startLevel(); },
+    onRestart()    { modeToggle('playing'); },
     onOpenKey()    {},
     onSelectLevel(container) {
       refreshLevelList(container, document.getElementById('pauseMenu'));
     },
+  });
+  // setup level select tabs in pause menu
+  const pauseTabs     = document.querySelectorAll('#pauseLevelSelectTabs button');
+  const pauseLevelList= document.getElementById('pauseLevelList');
+  pauseTabs.forEach(btn => {
+    btn.addEventListener('click', () => {
+      pauseTabs.forEach(b => b.classList.toggle('active', b === btn));
+      if (btn.dataset.type === 'campaign') {
+        refreshLevelList(pauseLevelList, document.getElementById('pauseMenu'), levels);
+      } else {
+        refreshLevelList(pauseLevelList, document.getElementById('pauseMenu'), playerLevels);
+      }
+    });
+  });
+  // ensure that when the user clicks the “Levels” tab, we default to campaign:
+  document.querySelector('#pauseMenu [data-tab="levels"]').addEventListener('click', () => {
+    document.querySelector('#pauseLevelSelectTabs button[data-type="campaign"]').click();
   });
 
   // Win / Lose modal setup
@@ -333,10 +371,15 @@ document.addEventListener('DOMContentLoaded', () => {
           currentLevel = i;
           
           if (inMode !== 'playing') {
-            modeToggle('playing', lvls);
+            modeToggle('playing', {
+              customLevels: lvls,
+              levelIndex:   i
+            });
           } else {
-            startLevel(lvls);
+            startLevel(lvls, i);
           }
+          winModal.classList.add('hidden');
+          gameOverModal.classList.add('hidden');
         });
       } else {
         li.classList.add('locked');
@@ -345,12 +388,20 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+
+
   // Close level select modal on click outside
-    levelSelectModal.addEventListener('click', e => {
-        if (e.target === levelSelectModal) {
-        levelSelectModal.classList.add('hidden');
-        }
-    });
+  levelSelectModal.addEventListener('click', e => {
+      if (e.target === levelSelectModal) {
+      levelSelectModal.classList.add('hidden');
+      }
+  });
+
+  // Close level select modal on button click
+  btnCloseLevelSelect.addEventListener('click', () => {
+    levelSelectModal.classList.add('hidden');
+  });
+
 
   /* ===================
       END OF MENU SETUP
@@ -364,8 +415,9 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('resize', debounce(() => syncCanvasSize(ctx.canvas), 100));
 
   // CLICK on cancel aborts
-  cancelBtn.addEventListener('click', exitPlacement);
-
+  cancelBtn.addEventListener('click', () => {
+    exitPlacement();
+  });
   /* =====================
       GRID CLICK HANDLING
      ===================== */
@@ -379,6 +431,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // If mirror in clicked cell, clear and re-calculate beam
     if (cell.dataset.type === 'mirror-slash' || cell.dataset.type === 'mirror-backslash') {
       cell.dataset.type = 'empty';
+      mirrorsLeft ++;  
+      movesUsed++;
+      updateSidebarMetrics();
       updateBeamOnMapChange();
       return;
     }
@@ -442,13 +497,41 @@ document.addEventListener('DOMContentLoaded', () => {
         // To-do: add handling for playerLevels and testing from creator mode
         // To-do: add win animation
         if (document.getElementById('btnBackToCreator').classList.contains('hidden')) {
-          unlockedUpTo = Math.max(unlockedUpTo, currentLevel + 1);
-          setCookie('unlockedUpTo', unlockedUpTo);
+          // unlockedUpTo = Math.max(unlockedUpTo, currentLevel + 1);
+          // setCookie('unlockedUpTo', unlockedUpTo);
           // stop the animation loop
           setAnimating(false);
           overlay.classList.remove('hidden');
           winModal.classList.remove('hidden');
-          if (currentLevel === levels.length - 1) {
+
+          const { rows, cols } = getLevelDims(currentLevels[currentLevel]);
+          const totalCells = rows*cols;
+          const visited    = getVisitedCells().size;
+          const litPct     = visited / totalCells;
+
+          // compute a simple “style” score
+          const basePoints     = 1000;
+          const score          = Math.floor(basePoints * (1 + nearMissCount/10) * litPct);
+
+          
+          // if campaign level, update our stats object
+          if (currentLevels === levels) {
+            levelStats[currentLevel] = {
+              unlocked:       true,
+              movesUsed,
+              nearMissCount,
+              litPct,
+              score
+            };
+
+            unlockedUpTo = Math.max(unlockedUpTo, currentLevel + 1);
+
+            // save to cookie
+            setCookie('levelStats', JSON.stringify(levelStats));
+            console.log('cookie is now', getCookie('levelStats'));
+            // console.log(`Level stats updated for level ${currentLevel}:`, levelStats[currentLevel]);
+          }
+          if (currentLevel === currentLevels.length - 1) {
             // Last level completed, keep next level button hidden
             document.getElementById('nextLevelBtn').classList.add('hidden');
           }

@@ -21,16 +21,15 @@ import { inMode,
 
 /**
  * Main Menu (title screen) wiring.
- * @param {{onPlay:Function, onLevels:Function, onLevelCreator:Function, onPlayerLevels:Function, onHowTo:Function}} cfg
+ * @param {{onPlay:Function, onLevels:Function, onLevelCreator:Function, onHowTo:Function}} cfg
  */
-export function setupMainMenu({onPlay, onLevels, onLevelCreator, onPlayerLevels, onHowTo}) {
+export function setupMainMenu({onPlay, onLevels, onLevelCreator, onHowTo}) {
     // Main menu elements
     const mainMenu          = document.getElementById('mainMenu');
     const btnPlay           = document.getElementById('btnPlay');
     const levelsBtnMain     = document.getElementById('btnLevelsMain');
     const howToBtn          = document.getElementById('btnHowTo');
     const btnLevelCreator   = document.getElementById('btnLevelCreator')
-    const btnPlayerLevels   = document.getElementById('btnPlayerLevels');
 
     // Level creator setup:
     const creatorAside = document.querySelector('#creator-aside');
@@ -47,10 +46,6 @@ export function setupMainMenu({onPlay, onLevels, onLevelCreator, onPlayerLevels,
     btnLevelCreator.onclick = () => {
         onLevelCreator();
     };
-    btnPlayerLevels.onclick = () => {
-        // to-do: show player levels modal
-        onPlayerLevels();
-    }
     howToBtn.onclick = () => {
         onHowTo(); // show how-to modal
     };
@@ -114,9 +109,12 @@ export function setupPauseMenu({ onResume, onRestart, onOpenKey, onSelectLevel }
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape') {
             if (inMode === 'playing') {
-                setPaused(pauseMenu.classList.contains('hidden'));
-            }
-            if (inMode === 'creator') {
+                if (document.getElementById('btnBackToCreator').classList.contains('hidden')) {
+                    setPaused(pauseMenu.classList.contains('hidden'));
+                } else {
+                    modeToggle('creator');
+                }
+            } else if (inMode === 'creator') {
                 // add a yes/no prompt here
                 // if (confirm('Exit level creator? Any unsaved changes will be lost.')) 
                 modeToggle('main');

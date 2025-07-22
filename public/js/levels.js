@@ -29,6 +29,7 @@ export const levels = [
   {
     name: "Level 1 – Single Bounce",
     description: "Place one mirror to bounce the beam into the target.",
+    maxMirrors: 3,
     layout: [
       ['.', '.', '.', '.', '.', 'S-R', '.', '.', '.', '.', '.'],
       ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.'],
@@ -47,6 +48,7 @@ export const levels = [
   {
     name: "Level 2 – Guided Hallway",
     description: "Two mirrors in a narrow corridor.",
+    maxMirrors: 2,
     layout: [
       ['#','#','#','#','#','#','#','#','#','#','#'],
       ['#','S-D','.','.','.','.','.','.','.','T','#'],
@@ -66,6 +68,7 @@ export const levels = [
   {
     name: "Level 3 – Avoid the Bomb",
     description: "Steer around a live bomb.",
+    maxMirrors: Infinity,
     layout: [
       ['.', '.', '.', 'S-L', '.', '.', '.', '.', '.', '.', '.'],
       ['.', '#','#','#','#','#','#','#','#','#','.'],
@@ -85,6 +88,7 @@ export const levels = [
   {
     name: "Level 4 – Loop de Loop",
     description: "Four mirrors to make a U-turn.",
+    maxMirrors: Infinity,
     layout: [
       ['.', '.', '.', '.', 'S-D', '.', '.', '.', '.', '.', '.'],
       ['.', '#', '#', '#', '.', '.', '#', '#', '#', '.', '.'],
@@ -104,6 +108,7 @@ export const levels = [
   {
     name: "Level 5 – Portal Pairs",
     description: "Use portals to shortcut across the board.",
+    maxMirrors: Infinity,
     layout: [
       ['S-R','.','.','.','.','.','.','.','P-A','.','.'],
       ['#','#','#','#','#','#','#','#','#','#','.'],
@@ -123,6 +128,7 @@ export const levels = [
   {
     name: "Level 6 – Monster Maze",
     description: "A tight spiral with one mirror to hit target.",
+    maxMirrors: Infinity,
     layout: [
       ['#','#','#','#','#','#','#','#','#','#','#'],
       ['#','S-D','.','.','.','.','.','.','.','.','#'],
@@ -142,6 +148,7 @@ export const levels = [
   {
     name: "Level 7 – Double Portal Twist",
     description: "Combine portals and a mirror to reach the target.",
+    maxMirrors: Infinity,
     layout: [
       ['S-R','.','.','.','P-A','.','.','.','.','.','.'],
       ['.', '#','#','#','#','#','#','#','#','#','.'],
@@ -161,6 +168,7 @@ export const levels = [
   {
     name: "Level 8 – Bomb Corridor",
     description: "Navigate past two bombs in a narrow walk.",
+    maxMirrors: Infinity,
     layout: [
       ['#','#','#','#','#','#','#','#','#','#','#'],
       ['#','S-D','.','.','.','.','.','.','.','T','#'],
@@ -180,6 +188,7 @@ export const levels = [
   {
     name: "Level 9 – Triple Mirror Challenge",
     description: "You get 3 mirrors to weave through walls.",
+    maxMirrors: Infinity,
     layout: [
       ['.', '.', '.', 'S-D', '.', '.', '.', '.', '.', '.', '.'],
       ['.', '#','#','.','#','#','#','#','#','.','.'],
@@ -199,6 +208,7 @@ export const levels = [
   {
     name: "Level 10 – Grand Finale",
     description: "Portals, bombs, and three mirrors all in one!",
+    maxMirrors: Infinity,
     layout: [
       ['S-D','.','.','.','.','.','.','.','.','.','.'],
       ['.', '#','#','#','#','#','#','#','#','#','.'],

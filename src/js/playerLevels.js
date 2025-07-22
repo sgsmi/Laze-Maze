@@ -30,6 +30,7 @@ export const builtIn = [
   {
     name:        "Easy Peasy",
     description: "Start at the top; bounce once to hit the target.",
+    maxMirrors: Infinity,
     layout: [
       ['.', '.', '.', '.', '.', '.', '.', 'S-D', '.', '.', '.'],
       ['.', '.', '#', '#', '.', '.', '.', '.', '#', '.', '.'],
@@ -47,6 +48,7 @@ export const builtIn = [
   {
     name:        "Level 2",
     description: "Level 2 description goes here.",
+    maxMirrors: Infinity,
     layout: [
       ['.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.'],
       ['.', '.', '#', '#', '.', '.', '.', '.', '#', '.', '.'],

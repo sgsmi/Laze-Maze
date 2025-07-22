@@ -9,3 +9,6 @@ npm-debug.log*
 
 # IDE
 .vscode/
+
+#Temporary files
+public/TODO.MD

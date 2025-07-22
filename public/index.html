@@ -11,7 +11,6 @@
       <button id="btnPlay">Play</button>
       <button id="btnLevelsMain">Levels</button>
       <button id="btnLevelCreator">Level Creator</button>
-      <button id="btnPlayerLevels">Player Levels</button>
       <button id="btnSettings">Settings</button>
       <button id="btnHowTo">How to Play</button>
     </div>
@@ -38,6 +37,10 @@
           <button id="btnToMainMenu">Exit to Menu</button>
         </div>
         <div id="panel-levels" class="panel hidden">
+          <nav id="pauseLevelSelectTabs" class="level-select-tabs">
+            <button data-type="campaign" class="active">Campaign</button>
+            <button data-type="player">Player Levels</button>
+          </nav>
           <!-- reuse levelSelectModal content -->
           <h3>Select Level</h3>
           <ul id="pauseLevelList" class="levelList"></ul>
@@ -64,6 +67,9 @@
   <aside id="sidebar" class="hidden">
     <button id="pauseBtn" class="utility-btn">❚❚</button>
     <button id="btnBackToCreator" class="hidden">← Back to Editor</button>
+    <div id="movesUsed">0</div>
+    <div id="nearMissCount">0</div>
+    <div id="mirrorsRemaining">∞</div>
     <div id="metrics"></div>
   </aside>
   <aside id="creator-aside" class="hidden">
@@ -102,7 +108,7 @@
         </div>
 
         <div id="grid"></div>
-        
+        <canvas id="lightCanvas"></canvas>
         <canvas id="beamCanvas"
                 style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;">
         </canvas>
@@ -113,10 +119,13 @@
     </div>
 
     <!-- Level Select Modal -->
-    <!-- to-do: possibly take the modal-content section of this 
-    for adding to innerModal, similar to keyModal implementation -->
+     <!-- to-do: add tabs to this modal for selecting campaign & player levels to display -->
     <div id="levelSelectModal" class="hidden modal">
       <div class="modal-content">
+        <nav id="levelSelectTabs" class="level-select-tabs">
+          <button data-type="campaign" class="active">Campaign</button>
+          <button data-type="player">Player Levels</button>
+        </nav>
         <h2>Select Level</h2>
         <ul id="levelList" class="levelList"></ul>
         <button id="closeLevelSelect">Close</button>
