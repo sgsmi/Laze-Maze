@@ -8,13 +8,15 @@ import { saveCustomLevels,
          loadCustomLevels } from './utils.js';
 
 const CELL_TYPES = [
-  { key: 'start',  name: 'Start',        multiple: false,  codePrefix: 'S', iconType: 'start',        variants: ['U','R','D','L'], limit: 1 },
-  { key: 'wall',   name: 'Wall',         multiple: true,   codePrefix: '#', iconType: 'wall',         variants: [],         limit: Infinity },
-  { key: 'portal', name: 'Portal',       multiple: true,   codePrefix: 'P', iconType: 'portal',       variants: ['A','B','C'], limit: 3 },
-  { key: 'filter', name: 'Filter',       multiple: true,   codePrefix: 'F', iconType: 'filter',       variants: ['R','G','B'], limit: 3 },
-  { key: 'bomb',   name: 'Bomb',         multiple: true,   codePrefix: 'B', iconType: 'bomb',         variants: [],         limit: Infinity },
-  { key: 'target', name: 'Target',       multiple: false,  codePrefix: 'T', iconType: 'target',       variants: [],         limit: 1 },
-];
+  { key: 'start',     name: 'Start',        multiple: false,  codePrefix: 'S', iconType: 'start',        variants: ['U','R','D','L'], limit: 1 },
+  { key: 'wall',      name: 'Wall',         multiple: true,   codePrefix: '#', iconType: 'wall',         variants: [],                limit: Infinity },
+  { key: 'portal',    name: 'Portal',       multiple: true,   codePrefix: 'P', iconType: 'portal',       variants: ['A','B','C'],     limit: 3 },
+  { key: 'converter', name: 'Converter',    multiple: true,   codePrefix: 'C', iconType: 'converter',    variants: ['R','G','B'],     limit: Infinity },
+  { key: 'filter',    name: 'Filter',       multiple: true,   codePrefix: 'F', iconType: 'filter',       variants: ['R','G','B'],     limit: 3 },
+  { key: 'bomb',      name: 'Bomb',         multiple: true,   codePrefix: 'B', iconType: 'bomb',         variants: [],                limit: Infinity },
+  { key: 'target',    name: 'Target',       multiple: false,  codePrefix: 'T', iconType: 'target',       variants: ['', 'R', 'G', 'B'],                limit: 1 },
+  { key: 'alarm',     name: 'Alarm',        multiple: true,   codePrefix: 'A', iconType: 'alarm',        variants: ['10','15','20'],  limit: Infinity },
+];  
 
 let maxMirrors = 10; // default to 10
 

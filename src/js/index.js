@@ -24,6 +24,8 @@ import { playerLevels,
 export let currentLevels = levels; 
 export let currentLevel = 0;
 let mirrorsLeft = 10; // default to 10 mirrors
+let alarmActive = false;
+let alarmTimer = null
 let levelStats = JSON.parse(getCookie('levelStats') || '{}');
 const campaignProgress = levels.map((lvl, i) => levelStats[i]?.litPct || 0);
 console.log('campaignProgress:', campaignProgress);
@@ -43,6 +45,7 @@ export function setMode(mode) {
 export function modeToggle(mode, opts = {}) {
   `mode: main | playing | creator`
   setMode(mode);
+  clearAlarm()
   console.log(`============ modeToggle() called!\n============ ${mode} mode activated!`)
 
   mainMenu      .classList.toggle('hidden', mode !== 'main');
@@ -495,15 +498,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Handle collision events
   window.addEventListener('cell-hit', e => {
-    switch (e.detail.type) {
+    const { type, row, col, color: beamColor } = e.detail;
+    switch (type) {
       case 'bomb':
         // stop the animation loop
         setAnimating(false);
+        clearAlarm();
         // darken board
         overlay.classList.remove('hidden');
         // show game over
         gameOverModal.classList.remove('hidden');
         break;
+
+      case 'alarm':
+        // only trigger once
+        if (!alarmActive) {
+          startAlarm(e.detail.time);
+          console.log(`alarm started with ${e.detail.time} seconds`)
+          // Highlight all alarm cells on the grid
+          document.querySelectorAll('#grid .cell[data-type="alarm"]').forEach(cell => {
+            cell.classList.add('active');
+          });
+          const cell = document.querySelector(`#grid .cell[data-row="${row}"][data-col="${col}"]`);
+          if (cell) cell.classList.add('active');
+        }
+        break;
+
+      case 'converter':
+        highlightCell(row, col, 'converter');
+        break;
+
+      case 'filter':
+        highlightCell(row, col, 'filter');
+        break;
+
       case 'target':
         // To-do: add handling for playerLevels and testing from creator mode
         // To-do: add win animation
@@ -511,9 +539,16 @@ document.addEventListener('DOMContentLoaded', () => {
           // unlockedUpTo = Math.max(unlockedUpTo, currentLevel + 1);
           // setCookie('unlockedUpTo', unlockedUpTo);
           // stop the animation loop
+          // enforce coloured targets
+          const tgt = document.querySelector(
+            `#grid .cell[data-row="${row}"][data-col="${col}"]`
+          );
+          const req = tgt.dataset.color;
+          if (req && req !== beamColor) {console.log(`req: ${req}, beamColor: ${beamColor}`);return;}
           setAnimating(false);
           overlay.classList.remove('hidden');
           winModal.classList.remove('hidden');
+          clearAlarm();
 
           const { rows, cols } = getLevelDims(currentLevels[currentLevel]);
           const totalCells = rows*cols;
@@ -548,16 +583,72 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         }
         break;
+
       case 'portal':
         // teleport logic held in beam.js
         break;
-      // etc…
     }
   });
   // animateBeam(beamCanvas.getContext('2d'), rows, cols);
 });
 
+function clearAlarm() {
+  if (alarmTimer !== null) {
+    clearInterval(alarmTimer);
+    alarmTimer = null;
+  }
+  alarmActive = false;
+  // hide alarm div
 
+  const ao = document.getElementById('alarmOverlay');
+  if (ao) ao.classList.replace('active', 'hidden');
+  const alarmDiv = document.getElementById('alarmCountdown');
+  if (alarmDiv) {
+    alarmDiv.classList.add('hidden');
+  }
+}
+
+function startAlarm(seconds) {
+  // avoid double-starting
+  if (alarmActive) return;
+  alarmActive = true;
+
+  // show the overlay
+  const ao = document.getElementById('alarmOverlay');
+  if (ao) ao.classList.replace('hidden','active');
+
+  // clear any old timer
+  if (alarmTimer !== null) {
+    clearInterval(alarmTimer);
+  }
+
+  let remaining = seconds;
+  alarmTimer = setInterval(() => {
+    remaining--;
+    updateAlarmUI(remaining);
+    if (remaining <= 0) {
+      clearAlarm(); // hide & clear
+      // then trigger game over
+      setAnimating(false);
+      overlay.classList.remove('hidden');
+      gameOverModal.classList.remove('hidden');
+    }
+  }, 1000);
+}
+
+function updateAlarmUI(remaining) {
+  const alarmDiv = document.getElementById('alarmCountdown');
+  if (alarmDiv) {
+    alarmDiv.textContent = `Alarm: ${remaining}s`;
+    alarmDiv.classList.toggle('hidden', remaining <= 0);
+  }
+}
+
+function highlightCell(r, c, cls) {
+  const cell = document.querySelector(`#grid .cell[data-row="${r}"][data-col="${c}"]`);
+  cell.classList.add('active');
+  setTimeout(() => cell.classList.remove('active'), 200);
+}
 
 /**
  * @param {string} containerId   – wrapper div

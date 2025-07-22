@@ -1,3 +1,4 @@
+/* your existing #grid-container can go away, since you now have #board-play */
 #grid {
   display: grid;
   width: 100%;
@@ -37,19 +38,6 @@
 /* WALL (solid block) */
 .cell[data-type="wall"] {
   background: #444;
-}
-
-/* TARGET (gold star) */
-.cell[data-type="target"] {
-  background: #222;
-}
-.cell[data-type="target"]::before {
-  content: "★";
-  position: absolute;
-  font-size: 1.5em;
-  color: gold;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
 }
 
 /* BOMB (circle with fuse) */
@@ -167,6 +155,85 @@
 .cell[data-type="start"][data-direction="R"]::before {
   transform: translate(-50%, -50%) rotate(-90deg);
 }
+/* ALARM CELL */
+.cell[data-type="alarm"] {
+  background: beige;
+}
+.cell[data-type="alarm"]::before {
+  content: "🔔";
+  color: white;
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  font-size: 1.5em;
+}
+.cell[data-type="alarm"].active {
+  animation: flashAlarm 1s infinite;
+}
+@keyframes flashAlarm {
+  0%,100% { background: red; }
+  50%    { background: darkred; }
+}
+
+/* BEAM CONVERTER */
+.cell[data-type="converter"] {
+  background: #222;
+  position: relative;
+}
+.cell[data-type="converter"]::before {
+  content: attr(data-color);
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  font-weight: bold;
+  text-shadow: 0 0 5px currentColor;
+}
+.cell[data-type="converter"][data-color="R"] { color: red; }
+.cell[data-type="converter"][data-color="G"] { color: lime; }
+.cell[data-type="converter"][data-color="B"] { color: cyan; }
+.cell[data-type="converter"].active {
+  box-shadow: 0 0 10px currentColor;
+}
+
+/* FILTER GLOW */
+.cell[data-type="filter"].active {
+  box-shadow: 0 0 8px currentColor;
+}
+
+/* TARGET (gold star) */
+.cell[data-type="target"] {
+  background: #222;
+}
+.cell[data-type="target"]::before {
+  content: "★";
+  position: absolute;
+  font-size: 1.5em;
+  color: gold;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Red Target */
+.cell[data-type="target"][data-color="R"]::before {
+  color: red;
+  text-shadow: 0 0 8px red, 0 0 16px #f00;
+}
+
+/* Green Target */
+.cell[data-type="target"][data-color="G"]::before {
+  color: lime;
+  text-shadow: 0 0 8px lime, 0 0 16px #0f0;
+}
+
+/* Blue Target */
+.cell[data-type="target"][data-color="B"]::before {
+  color: cyan;
+  text-shadow: 0 0 8px cyan, 0 0 16px #0ff;
+}
+
+/* set colours of R/G/B targets */
+
+/* you may wish to adjust your existing target rule to only show ★ via ::before */
 
 /* overlay dims the whole board */
 #overlay {
@@ -647,7 +714,7 @@
   background: limegreen;
   color: #000;
 }
-/* cell preview next to each label */
+/* the little cell preview next to each label */
 .creator-item .cell {
   flex: 0 0 32px;
   width: 32px;
@@ -667,7 +734,7 @@
 /* ==== Variant bar (dropdown) ==== */
 .variant-bar {
   position: absolute;
-  top: 100%;   
+  top: 100%;      /* sit just below the parent .creator-item */
   left: 0;
   display: flex;
   gap: 0.25em;
@@ -721,7 +788,7 @@
   cursor: pointer;
 }
 
-/*  My Levels panel */
+/* Style the My Levels panel */
 #myLevelsContainer {
   background: rgba(0,0,0,0.85);
   color: #fff;
@@ -813,17 +880,17 @@
 /* ------------------------------------------------------------------
    Window base + overlays
    ------------------------------------------------------------------ */
-/* 1) window base colour */
+/* 1) Every window gets this base colour */
 .building .face .window {
   --b: 0;                             /* brightness 0…1 */
   position: relative;
-  background: #cccccc8e;              /* soft grey */
+  background: #cccccc8e;             
   border-radius: 2px;
   overflow: hidden;
 }
 
-/* 2) paint a bright core glow,
-      fading out to the grey */
+/* 2) ::before paints the bright core glow,
+      fading out to the *same* grey, never black */
 .building .face .window::before {
   content: '';
   position: absolute; inset: 0;
@@ -837,7 +904,7 @@
   transition: none;
 }
 
-/* 3) “shade” overlay for unlit,
+/* 3) ::after is the “shade” overlay for unlit,
       fading out as --b ramps up */
 .building .face .window::after {
   content: '';
@@ -846,3 +913,27 @@
   pointer-events: none;
   transition: 0.3s;
 }
+
+#alarmOverlay {
+  pointer-events: none;
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(255, 0, 0, 0.2);
+  mix-blend-mode: multiply;
+  z-index: 20; /* above grid but below modals */
+  opacity: 0;
+  transition: opacity 0.5s ease-in-out;
+  animation: pulse-alarm 1s infinite alternate;
+}
+
+#alarmOverlay.active {
+  opacity: 1;
+}
+
+@keyframes pulse-alarm {
+  from { background: rgba(255, 0, 0, 0.15); }
+  to   { background: rgba(255, 0, 0, 0.35); }
+}
+
+/* utility */
+.hidden { display: none; }

@@ -77,10 +77,13 @@
   <aside id="sidebar" class="hidden">
     <button id="pauseBtn" class="utility-btn">❚❚</button>
     <button id="btnBackToCreator" class="hidden">← Back to Editor</button>
-    <div id="movesUsed">0</div>
-    <div id="nearMissCount">0</div>
-    <div id="mirrorsRemaining">∞</div>
-    <div id="metrics"></div>
+    
+    <div id="metrics">
+      <div id="movesUsed">0</div>
+      <div id="nearMissCount">0</div>
+      <div id="mirrorsRemaining">∞</div>
+    </div>
+    <div id="alarmCountdown"></div>
   </aside>
   <aside id="creator-aside" class="hidden">
     <button id="exitCreator" class="utility-btn">← Back to Menu</button>
@@ -92,7 +95,7 @@
     </div>
   </aside>
   <div id="game-wrapper" class="hidden">
-    
+    <div id="alarmOverlay" class="hidden"></div>
     <div id="board-play" class="hidden">
       <!-- Sidebar for utility buttons -->
       
