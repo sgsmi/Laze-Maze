@@ -25,6 +25,8 @@ export let currentLevels = levels;
 export let currentLevel = 0;
 let mirrorsLeft = 10; // default to 10 mirrors
 let levelStats = JSON.parse(getCookie('levelStats') || '{}');
+const campaignProgress = levels.map((lvl, i) => levelStats[i]?.litPct || 0);
+console.log('campaignProgress:', campaignProgress);
 let movesUsed = 0;
 export let nearMissCount = 0;
 export let unlockedUpTo = Math.max(
@@ -63,8 +65,8 @@ export function modeToggle(mode, opts = {}) {
       break;
     case 'playing':
 
-      // default to current selected levels
-      let lvls = currentLevels;
+      // default to campaign if no custom levels provided
+      let lvls = levels;
       let idx  = opts.levelIndex ?? currentLevel;
 
       // if they passed a customLevel, wrap it in a one‐element array
@@ -149,7 +151,7 @@ export function exitPlacement() {
 }
 function enterPlacement(cell) {
   placingCell = cell; previewType = null;
-  if (mirrorsLeft <= 0) { alert("No mirrors left!"); return; }
+  if (mirrorsLeft <= 0) { alert("No mirrors left!"); exitPlacement(); return; }
   cell.classList.add('selected');
   overlay.classList.remove('hidden');
   cancelBtn.classList.remove('hidden');
@@ -215,6 +217,11 @@ export function updateSidebarMetrics() {
   document.getElementById('mirrorsRemaining').textContent = mirrorsLeft === Infinity ? `Mirrors left: ∞` : `Mirrors left: ${mirrorsLeft}`;
 }
 
+renderBuilding(
+  'building-container',
+  8,                     // windows per floor
+  campaignProgress
+);
 
 // placeholders
 let overlay, cancelBtn, beamCanvas;
@@ -278,6 +285,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // Main menu setup
   setupMainMenu({
     onPlay()    {  
+      // If unlockedUpTo has been set, start campaign from latest unlocked level
+      if (unlockedUpTo > 0 && unlockedUpTo < levels.length) {
+        currentLevel = unlockedUpTo;
+      }
       modeToggle('playing')
      },
     onLevels()  {
@@ -529,7 +540,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // save to cookie
             setCookie('levelStats', JSON.stringify(levelStats));
             console.log('cookie is now', getCookie('levelStats'));
-            // console.log(`Level stats updated for level ${currentLevel}:`, levelStats[currentLevel]);
+            refreshBuilding();
           }
           if (currentLevel === currentLevels.length - 1) {
             // Last level completed, keep next level button hidden
@@ -545,3 +556,83 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   // animateBeam(beamCanvas.getContext('2d'), rows, cols);
 });
+
+
+
+/**
+ * @param {string} containerId   – wrapper div
+ * @param {number} windowsPerRow – how many windows per floor
+ * @param {number[]} progress    – array[floorCount] of fractions in [0,1]
+ */
+export function renderBuilding(containerId, windowsPerRow, progress) {
+  const container  = document.getElementById(containerId);
+  const floorCount = levels.length;
+  const MIN_BRIGHT = 0.3;  // 50% minimum for any unlocked floor
+
+  container.innerHTML = '';
+  const building = document.createElement('div');
+  building.className = 'building';
+  container.append(building);
+
+  ['left','right'].forEach(faceName => {
+    const face = document.createElement('div');
+    face.className = `face ${faceName}`;
+    face.style.gridTemplateRows    = `repeat(${floorCount}, 1fr)`;
+    face.style.gridTemplateColumns = `repeat(${windowsPerRow}, 1fr)`;
+    building.append(face);
+
+    // build from bottom floor up
+    for (let floor = floorCount - 1; floor >= 0; floor--) {
+      const rawPct = progress[floor] || 0;
+      const pct    = Math.max(0, Math.min(1, rawPct));
+
+      let brightnessArr;
+      // only for unlocked floors
+      if (pct > 0) {
+        // ensure stats[floor] exists
+        if (!levelStats[floor]) levelStats[floor] = {};
+
+        // generate + cache if needed
+        if (
+          !Array.isArray(levelStats[floor].windowBrightness) ||
+          levelStats[floor].windowBrightness.length !== windowsPerRow
+        ) {
+          // map [0…1]→[MIN_BRIGHT…1]
+          const baseB = MIN_BRIGHT + pct * (1 - MIN_BRIGHT);
+          const arr = Array.from({ length: windowsPerRow }, () =>
+            Number((baseB * Math.random()).toFixed(3))
+          );
+          levelStats[floor].windowBrightness = arr;
+          // persist for next session
+          setCookie('levelStats', JSON.stringify(levelStats));
+        }
+
+        brightnessArr = levelStats[floor].windowBrightness;
+      } else {
+        // locked → all dark
+        brightnessArr = new Array(windowsPerRow).fill(0);
+      }
+
+      // now append that floor’s windows
+      for (let col = 0; col < windowsPerRow; col++) {
+        const win = document.createElement('div');
+        win.className = 'window';
+        win.style.setProperty('--b', brightnessArr[col]);
+        face.append(win);
+      }
+    }
+  });
+}
+
+function campaignProgressArray(levelCount) {
+  return Array.from({length: levelCount}, (_, i) =>
+    (levelStats[i] && levelStats[i].litPct) || 0
+  );
+}
+
+function refreshBuilding() {
+  const levelCount      = levels.length;
+  const windowsPerRow   = 8;   // or whatever your design uses
+  const progressArr     = campaignProgressArray(levelCount);
+  renderBuilding("building-container", windowsPerRow, progressArr);
+}

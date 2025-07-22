@@ -97,8 +97,8 @@ function computeSegments(ctx, rows, cols) {
 
   const segs = [];
   let overrideStart = null;
-
-  for (let i = 0; i < 20; i++) {
+  const maxBounces = rows * cols;
+  for (let i = 0; i < maxBounces; i++) {
     const seg = traceOneSegment(r, c, dr, dc, rows, cols, cw, ch, canvas);
 
     if (overrideStart) {

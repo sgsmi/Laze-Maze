@@ -1,4 +1,3 @@
-/* your existing #grid-container can go away, since you now have #board-play */
 #grid {
   display: grid;
   width: 100%;
@@ -648,7 +647,7 @@
   background: limegreen;
   color: #000;
 }
-/* the little cell preview next to each label */
+/* cell preview next to each label */
 .creator-item .cell {
   flex: 0 0 32px;
   width: 32px;
@@ -668,7 +667,7 @@
 /* ==== Variant bar (dropdown) ==== */
 .variant-bar {
   position: absolute;
-  top: 100%;      /* sit just below the parent .creator-item */
+  top: 100%;   
   left: 0;
   display: flex;
   gap: 0.25em;
@@ -722,7 +721,7 @@
   cursor: pointer;
 }
 
-/* Style the My Levels panel */
+/*  My Levels panel */
 #myLevelsContainer {
   background: rgba(0,0,0,0.85);
   color: #fff;
@@ -775,4 +774,75 @@
 .level-select-tabs button.active {
   background: cyan;
   color: #000;
+}
+
+/* ------------------------------------------------------------------
+   Base building & face styles
+   ------------------------------------------------------------------ */
+#building-container {
+  width: 300px;
+  height: 400px;
+  margin: 0 auto;
+  margin-top: 50px;
+  perspective: 800px;
+}
+.building {
+  width: 80%; height: 80%;
+  position: relative;
+  transform-style: preserve-3d;
+  transform: rotateX(10deg) rotateY(-20deg);
+}
+.building .face {
+  position: absolute; top: 0; left: 0;
+  width: 100%;  height: 100%;
+  display: grid;
+  grid-gap: 6px;
+  background: #242424;
+  backface-visibility: hidden;
+  padding: 10px;
+}
+.building .face.left {
+  transform: rotateY(-45deg) translateX(-29.1%);
+  transform-origin: left center;
+}
+.building .face.right {
+  transform: rotateY(45deg) translateX(29.1%);
+  transform-origin: right center;
+}
+
+/* ------------------------------------------------------------------
+   Window base + overlays
+   ------------------------------------------------------------------ */
+/* 1) window base colour */
+.building .face .window {
+  --b: 0;                             /* brightness 0…1 */
+  position: relative;
+  background: #cccccc8e;              /* soft grey */
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+/* 2) paint a bright core glow,
+      fading out to the grey */
+.building .face .window::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(255,235,150,var(--b)) 0%,
+    rgba(255,200,80,  var(--b)) 60%,
+    rgba(204,204,204,var(--b)) 100%
+  );
+  pointer-events: none;
+  transition: none;
+}
+
+/* 3) “shade” overlay for unlit,
+      fading out as --b ramps up */
+.building .face .window::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: rgba(43,43,43, calc(0.7 * (1 - var(--b))));
+  pointer-events: none;
+  transition: 0.3s;
 }

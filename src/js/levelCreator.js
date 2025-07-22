@@ -337,7 +337,8 @@ export function initLevelCreator({
               <button id="col-plus">+</button>
       </div>
       <div class="creator-controls-footer">
-        <input type="number" id="max-mirrors" placeholder="Max Mirrors" value="${maxMirrors}" min="0" />  
+        Max Mirrors:
+        <input type="number" id="max-mirrors" placeholder="Max Mirrors" value="${maxMirrors}" min="0"/> 
       </div>`
 
     // 1) Update maxMirrors on input change
