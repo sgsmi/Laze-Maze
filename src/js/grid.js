@@ -27,6 +27,8 @@ function parseCellCode(code) {
       return { type: 'alarm', time: Number(suffix) || 10 };
     case 'C': // beam converter
       return { type: 'converter', color: suffix };
+    case '.':
+      return { type: 'empty', variant: suffix };
     default:  return { type: 'empty' };
   }
 }
@@ -39,12 +41,13 @@ export function createGrid(containerEl, rows, cols, layout) {
       cell.dataset.row = r;
       cell.dataset.col = c;
       const code = layout[r][c];                // e.g. '#', '.', 'T'
-      const { type, id, color, direction, time} = parseCellCode(code);
+      const { type, id, color, direction, time, variant} = parseCellCode(code);
       cell.dataset.type = type;
       if (id)    cell.dataset.portalId = id;
       if (color) cell.dataset.color = color;
       if (direction) cell.dataset.direction = direction; // e.g. 'M-/' or 'M-\'
       if (time) cell.dataset.time = time;
+      if (variant) cell.dataset.variant = variant;
       containerEl.append(cell);
       }
     }

@@ -367,6 +367,12 @@ function drawLightOverlay(rows, cols) {
   const { cellWidth, cellHeight } = getCellDimensions(lightCanvas, cols, rows);
   const radius = Math.max(cellWidth, cellHeight) * 2;
 
+  // add all static light-emitters to visitedCells
+  document.querySelectorAll('#grid .cell[data-variant="L"]').forEach(cell => {
+    const r = +cell.dataset.row, c = +cell.dataset.col;
+    visitedCells.add(`${r},${c}`);
+  });
+
   for (const key of visitedCells) {
     const [r, c] = key.split(',').map(Number);
     const x = (c + 0.5) * cellWidth;

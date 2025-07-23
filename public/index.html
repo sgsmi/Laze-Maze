@@ -13,7 +13,7 @@
           <button id="btnPlay">Play</button>
           <button id="btnLevelsMain">Levels</button>
           <button id="btnLevelCreator">Level Creator</button>
-          <button id="btnSettings">Settings</button>
+          <button id="btnSettingsMain">Settings</button>
           <button id="btnHowTo">How to Play</button>
         </div>
         <div class="column" style="flex: 1; display: flex; align-items: center; justify-content: center;">
@@ -94,6 +94,10 @@
       <button id="closeMyLevels">Close</button>
     </div>
   </aside>
+  <div id="tutorialStaticControls" class="static-tutorial-controls hidden">
+    <button id="staticSkipTutorial">Skip Tutorial</button>
+    <button id="staticDisableTutorials">Disable Tutorials</button>
+  </div>
   <div id="game-wrapper" class="hidden">
     <div id="alarmOverlay" class="hidden"></div>
     <div id="board-play" class="hidden">
@@ -193,5 +197,25 @@
       <div class="cell" data-type="target"></div>
       <div class="desc">Target → complete the level</div>
     </div>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+ <template id="settingsTemplate">
+  <div class="settings-content">
+    <h3>Settings</h3>
+    <label>
+      <input type="checkbox" id="chkTutorials">
+      Enable Tutorials
+    </label>
+  </div>
+</template>
+
+
+<div id="settingsModal" class="modal hidden">
+  <div class="modal-content" id="settingsModalContent">
+    <!-- Settings content will be injected here -->
+    <div id="settingsContentWrapper"></div>
+    <button id="closeSettings">Close</button>
   </div>
 </div>

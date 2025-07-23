@@ -30,6 +30,8 @@
   z-index: 20;
 }
 
+
+
 /* do not bring cells with type 'bomb' to front on hover */
 .cell[data-type="bomb"]:hover {
   z-index: 1; /* lower than other cells */
@@ -349,7 +351,7 @@
   display: flex;          /* center content */
   align-items: center;
   justify-content: center;
-  z-index: 200;           /* above everything */
+  z-index: 1100;           /* above everything */
 }
 .levelList {
   list-style: none; padding: 0; margin: 1em 0;
@@ -416,7 +418,7 @@
   display: flex;          /* center content */
   align-items: top;
   justify-content: top;
-  z-index: 200;           /* above everything */
+  z-index: 1100;           /* above everything */
   /* stack vertically */
   flex-direction: column;
   /* suggest what to remove please */
@@ -441,7 +443,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 200;
+  z-index: 1050;
 }
 .modal-content {
   background: #111;
@@ -745,12 +747,13 @@
   box-shadow: 0 2px 6px rgba(0,0,0,0.5);
   z-index: 5;
 }
+
 .variant-bar.hidden {
   display: none;
 }
 .variant-bar button {
   flex: none;
-  width: 24px; height: 24px;
+  width: auto !important; height: 24px;
   border: none;
   background: transparent;
   cursor: pointer;
@@ -758,6 +761,7 @@
   font-weight: bold;
   border-radius: 2px;
   transition: 0.2s;
+  white-space: nowrap;
 }
 .variant-bar button.active {
   background: limegreen;
@@ -937,3 +941,229 @@
 
 /* utility */
 .hidden { display: none; }
+
+
+/* BRIEFING & TUTORIAL */
+
+#briefingOverlay {
+  position:fixed; inset:0;
+  background:rgba(0,0,0,.9);
+  display:flex; align-items:center; justify-content:center;
+  z-index:1000;
+}
+#briefingBox {
+  color:#fff; font-size:1.2rem; max-width:600px; text-align:center;
+}
+#briefingNext {
+  margin-top:1rem; padding:.5em 1em;
+}
+#tutorialCallout {
+  position:absolute;
+  background:rgba(0,0,0,.8);
+  color:#fff; padding:.5em; border-radius:4px;
+  max-width:200px; z-index:1000;
+  cursor:pointer;
+}
+
+
+
+.tutorial-highlight {
+  position: relative;
+  z-index: 1005;
+  box-shadow: 0 0 8px cyan;
+  transition: box-shadow 1s;
+}
+#tutorialOverlay {
+  position: fixed;
+  inset:    0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+#tutorialBtn {
+  margin-top: 1rem;
+}
+
+/* 1) make the grid pointer-dead by default in restricted mode */
+#grid.tutorial-restrict .cell {
+  pointer-events: none;
+}
+
+/* 2) override on allowed elements */
+#grid.tutorial-restrict .tutorial-allow {
+  pointer-events: auto !important;
+  z-index:      1001;   /* bring it above the overlay */
+}
+
+
+/* when grid has this class, all cells are non-interactive */
+.tutorial-restrict .cell {
+  pointer-events: none;
+}
+
+/* any element we mark with .tutorial-allow regains interactivity */
+.tutorial-allow {
+  pointer-events: auto !important;
+}
+
+/* ensure cancel button floats above tutorial overlay */
+#cancelPlacement {
+  z-index: 2001;    /* higher than tutorialOverlay (1000) */
+}
+
+/* revive the pop-over style for tutorial steps */
+#tutorialBox {
+  position: absolute;
+  background: rgba(0,0,0,0.8);
+  color: #fff;
+  padding: .5em 1em;
+  border-radius: 4px;
+  max-width: 200px;
+  cursor: default;
+  z-index: 1001;    /* just above tutorialOverlay */
+  transition: top 0.2s, left 0.2s;
+}
+
+/* when we highlight an element, place the pop-over beneath it */
+.tutorial-highlight + #tutorialBox {
+  /* you may adjust offsets as needed */
+  top: calc(100% + 8px);
+  left: 0;
+}
+
+/* ============ tutorial pointer-events rules ============ */
+
+/* When the grid has .tutorial-restrict, block all pointer events inside it… */
+#grid.tutorial-restrict {
+  pointer-events: none;
+}
+
+/* …except on elements we explicitly mark .tutorial-allow */
+#grid.tutorial-restrict .tutorial-allow {
+  pointer-events: auto !important;
+  /* bring it above the overlay for clicks & mousemove */
+  z-index: 1002;
+}
+
+/* Make sure the overlay itself only intercepts when we want it to */
+#tutorialOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.3);
+  z-index: 1000;
+  /* pointer-events will be toggled in JS */
+}
+
+/* highlight styling (you already have something like this) */
+.tutorial-highlight {
+  z-index: 1001 !important;
+  box-shadow: 0 0 15px 5px yellow;
+}
+
+/* small skip/disable bar inside tutorial box */
+#tutorialControls {
+  margin-top: .5em;
+  display: flex;
+  gap: .5em;
+  justify-content: flex-end;
+}
+#tutorialControls button {
+  font-size: .9rem;
+  padding: .3em .6em;
+}
+
+#settingsModal {
+  z-index: 1000
+}
+
+.settings-content label {
+  display: block;
+  margin: 0.5em 0;
+}
+
+.static-tutorial-controls {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  gap: 0.5rem;
+  z-index: 5000;            /* higher than modals & overlays */
+}
+.static-tutorial-controls button {
+  padding: 0.5em 1em;
+  background: #222;
+  color: #fff;
+  border: 1px solid cyan;
+  cursor: pointer;
+}
+#creator-aside .preview-cell[data-variant="L"],
+#creator-grid .cell[data-variant="L"] {
+  /* a pale glow so it reads as “lit” */
+  background: #fffcce;
+  box-shadow: inset 0 0 8px rgba(255,255,200,0.7);
+}
+
+
+/* Info-popup for level creator */
+.lc-info-popup {
+  position: absolute;
+  background: rgba(0,0,0,0.8);
+  color: #fff;
+  padding: 0.5em;
+  border-radius: 4px;
+  max-width: 180px;
+  font-size: 0.9em;
+  line-height: 1.3;
+  z-index: 100;
+}
+.info-btn {
+  background: none;
+  border: none;
+  color: cyan;
+  font-size: 1em;
+  cursor: help;
+  margin-left: 0.5em;
+  padding: 0;
+}
+.creator-item .info-btn:hover {
+  color: white;
+}
+
+/* Level Creator Warning Box */
+#lc-warning {
+  background: rgba(255, 0, 0, 0.9);
+  color: #fff;
+  padding: 0.5em 1em;
+  border-radius: 4px;
+  margin: 0.5em 0;
+  font-size: 0.9em;
+  max-width: 240px;       
+  white-space: normal;   
+  word-break: break-word; 
+}
+#lc-warning.hidden {
+  display: none;
+}
+
+/* —————————————————————
+   Level Creator Toasts
+   ————————————————————— */
+.lc-toast {
+  background: rgba(0,0,0,0.8);
+  color: white;
+  padding: 0.5em 1em;
+  border-radius: 4px;
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 1;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+  z-index: 1050;
+}
+.lc-toast.fade-out {
+  opacity: 0;
+}
