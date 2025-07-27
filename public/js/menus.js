@@ -160,7 +160,6 @@ export function setupPauseMenu({ onResume, onRestart, onOpenKey, onSelectLevel }
         btn.addEventListener('click', () => {
         activateTab(btn.dataset.tab);
         if (btn.dataset.tab === 'levels') {
-            window.dispatchEvent(new Event('tutorial:skip'));
             onSelectLevel(pauseLevels);
         }
         });
@@ -209,6 +208,19 @@ export function setupPauseMenu({ onResume, onRestart, onOpenKey, onSelectLevel }
         setCookie('tutorialsActive', val);
         window.tutorialsActive = val;
     };
+    const chkBrf = pauseSettings.querySelector('#chkBriefings');
+    if (chkBrf) {
+    // default ON unless cookie explicitly "false"
+    chkBrf.checked = getCookie('briefingsActive') !== 'false';
+    chkBrf.onchange = () => {
+        const val = chkBrf.checked;
+        setCookie('briefingsActive', val);
+        // dispatch an event so index.js can pick it up
+        window.dispatchEvent(new CustomEvent('briefings:toggle', { detail: val }));
+    };
+    }
+
+
     }
 
     // need to somehow use the same #settingsContent inside #panel-settings so all event listeners are matched and cookie setting is unified. I don't want the close button to appear in the pause menu, however as this is a tab panel

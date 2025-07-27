@@ -232,6 +232,33 @@
   text-shadow: 0 0 8px cyan, 0 0 16px #0ff;
 }
 
+/* ——— Cake (joke cell) ——— */
+.cell[data-type="cake"] {
+  background: #222;
+  position: relative;
+}
+.cell[data-type="cake"]::before {
+  content: "🍰";
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.5em;
+}
+
+/* ——— Blob aftermath ——— */
+.cell[data-type="blob"] {
+  background: #333;
+  position: relative;
+}
+.cell[data-type="blob"]::before {
+  content: "💥";
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.5em;
+}
+
+
 /* set colours of R/G/B targets */
 
 
@@ -310,7 +337,7 @@
   padding: 2em;
   border-radius: 8px;
   text-align: center;
-  z-index: 100;
+  z-index: 115;
 }
 
 #gameOverModal button {
@@ -318,7 +345,7 @@
   padding: 0.5em 1em;
   font-size: 1em;
   cursor: pointer;
-  z-index: 100;
+  z-index: 115;
 }
 
 #winModal {
@@ -349,7 +376,7 @@
   display: flex;          /* center content */
   align-items: center;
   justify-content: center;
-  z-index: 1100;           /* above everything */
+  z-index: 110;           /* above everything */
 }
 .levelList {
   list-style: none; padding: 0; margin: 1em 0;
@@ -416,7 +443,7 @@
   display: flex;          /* center content */
   align-items: top;
   justify-content: top;
-  z-index: 1100;           /* above everything */
+  z-index: 110;           /* above everything */
   /* stack vertically */
   flex-direction: column;
   /* suggest what to remove please */
@@ -441,7 +468,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1050;
+  z-index: 105;
 }
 .modal-content {
   background: #111;
@@ -468,7 +495,7 @@
 }
 
 #pauseBtn {
-  z-index: 300; /* sit above the board */
+  z-index: 102; /* sit above the board */
 }
 
 /* Pause Menu tabs */
@@ -520,7 +547,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 300;           /* above the tabs/panels */
+  z-index: 50;           /* above the tabs/panels */
 }
 
 /* the white box inside it */
@@ -799,7 +826,7 @@
   position: absolute;
   top: 2rem; left: 2rem; right: 2rem; bottom: 2rem;
   overflow-y: auto;
-  z-index: 50;
+  z-index: 55;
 }
 #myLevelsContainer.hidden { display: none; }
 #myLevelsList {
@@ -947,7 +974,7 @@
   position:fixed; inset:0;
   background:rgba(0,0,0,.9);
   display:flex; align-items:center; justify-content:center;
-  z-index:1000;
+  z-index:101;
 }
 #briefingBox {
   color:#fff; font-size:1.2rem; max-width:600px; text-align:center;
@@ -967,7 +994,7 @@
 
 .tutorial-highlight {
   position: relative;
-  z-index: 1005;
+  z-index: 105;
   box-shadow: 0 0 8px cyan;
   transition: box-shadow 1s;
 }
@@ -978,7 +1005,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 101;
 }
 #tutorialBtn {
   margin-top: 1rem;
@@ -992,7 +1019,7 @@
 /* 2) override on allowed elements */
 #grid.tutorial-restrict .tutorial-allow {
   pointer-events: auto !important;
-  z-index:      1001;   /* bring it above the overlay */
+  z-index:      102;   /* bring it above the overlay */
 }
 
 
@@ -1008,7 +1035,7 @@
 
 /* ensure cancel button floats above tutorial overlay */
 #cancelPlacement {
-  z-index: 2001;    /* higher than tutorialOverlay (1000) */
+  z-index: 201;    /* higher than tutorialOverlay (1000) */
 }
 
 /* revive the pop-over style for tutorial steps */
@@ -1020,7 +1047,7 @@
   border-radius: 4px;
   max-width: 200px;
   cursor: default;
-  z-index: 1001;    /* just above tutorialOverlay */
+  z-index: 102;    /* just above tutorialOverlay */
   transition: top 0.2s, left 0.2s;
 }
 
@@ -1042,7 +1069,7 @@
 #grid.tutorial-restrict .tutorial-allow {
   pointer-events: auto !important;
   /* bring it above the overlay for clicks & mousemove */
-  z-index: 1002;
+  z-index: 102;
 }
 
 /* Make sure the overlay itself only intercepts when we want it to */
@@ -1050,13 +1077,13 @@
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.3);
-  z-index: 1000;
+  z-index: 101;
   /* pointer-events will be toggled in JS */
 }
 
 /* highlight styling (you already have something like this) */
 .tutorial-highlight {
-  z-index: 1001 !important;
+  z-index: 102 !important;
   box-shadow: 0 0 15px 5px yellow;
 }
 
@@ -1073,7 +1100,7 @@
 }
 
 #settingsModal {
-  z-index: 1000
+  z-index: 110
 }
 
 .settings-content label {
@@ -1087,7 +1114,7 @@
   right: 1rem;
   display: flex;
   gap: 0.5rem;
-  z-index: 5000;            /* higher than modals & overlays */
+  z-index: 115;            /* higher than modals & overlays */
 }
 .static-tutorial-controls button {
   padding: 0.5em 1em;
@@ -1160,7 +1187,7 @@
   opacity: 1;
   transition: opacity 0.5s ease;
   pointer-events: none;
-  z-index: 1050;
+  z-index: 105;
 }
 .lc-toast.fade-out {
   opacity: 0;

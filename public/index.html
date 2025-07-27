@@ -95,8 +95,9 @@
     </div>
   </aside>
   <div id="tutorialStaticControls" class="static-tutorial-controls hidden">
-    <button id="staticSkipTutorial">Skip Tutorial</button>
+    <button id="staticSkip">Skip Tutorial</button>
     <button id="staticDisableTutorials">Disable Tutorials</button>
+    <button id="staticDisableBriefings">Disable Briefings</button>
   </div>
   <div id="game-wrapper" class="hidden">
     <div id="alarmOverlay" class="hidden"></div>
@@ -204,6 +205,10 @@
  <template id="settingsTemplate">
   <div class="settings-content">
     <h3>Settings</h3>
+    <label>
+      <input type="checkbox" id="chkBriefings">
+      Enable Briefings
+    </label>
     <label>
       <input type="checkbox" id="chkTutorials">
       Enable Tutorials

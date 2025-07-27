@@ -23,7 +23,8 @@ import { playerLevels,
 // initialize unlockedUpTo from cookie (or zero)
 export let currentLevels = levels; 
 export let currentLevel = 0;
-export let tutorialsActive = getCookie('tutorialsActive') || true;
+export let tutorialsActive = getCookie('tutorialsActive') !== 'false';
+export let briefingsActive = getCookie('briefingsActive') !== 'false';
 export let tutorialLockGrid    = false;
 export let tutorialLockOverlay = false;
 let mirrorsLeft = 10; // default to 10 mirrors
@@ -92,14 +93,8 @@ export async function modeToggle(mode, opts = {}) {
         idx = opts.levelIndex ?? 0;
       }
 
-      const lvl = lvls[opts.levelIndex ?? currentLevel];
-      if (lvl.briefing) {
-          if (lvl.briefing?.length) {
-          await runBriefing(lvl.briefing);
-        }
-      }
+      
       startLevel(lvls, idx);
-      animateBeam(beamCtx);
       break;
     case 'creator':
       syncCanvasSize(creatorGrid)
@@ -202,6 +197,10 @@ function onMouseMove(e) {
 function confirmPlacement() {
   if (!placingCell || !previewType) return;
   if (tutorialLockOverlay) return;
+  console.log(`previewType: ${previewType}`)
+  if (previewType === 'mirror-backslash') {
+    window.dispatchEvent(new CustomEvent('tutorial:backslash-confirmed'));
+  }
   window.dispatchEvent(new CustomEvent('tutorial:placement-confirmed'));
   mirrorsLeft--;
   movesUsed++;
@@ -223,26 +222,49 @@ export function loadLevel(level, lvls = currentLevels) {
   console.log(`loadLevel(${level}) called, grid created with ${rows} rows and ${cols} cols`);
 }
 export async function startLevel(lvls = currentLevels, levelIndex = currentLevel) {
+  // Abort any in‐flight placement
   exitPlacement();
-  mirrorsLeft = (typeof lvls[levelIndex].maxMirrors === 'number') ? lvls[levelIndex].maxMirrors : Infinity;
-  movesUsed = 0;
+
+  // Reset mirrors, stats, and UI
+  mirrorsLeft   = (typeof lvls[levelIndex].maxMirrors === 'number')
+                   ? lvls[levelIndex].maxMirrors
+                   : Infinity;
+  movesUsed     = 0;
   nearMissCount = 0;
   updateSidebarMetrics();
+
   console.log(`startLevel(${levelIndex}) called with ${lvls.length} levels`);
   console.log(`Level dictionary:`, lvls);
+
+  // Point at the new level
   currentLevels = lvls;
   currentLevel  = levelIndex;
+
+  // Build the grid & canvas size
   loadLevel(levelIndex, lvls);
   syncCanvasSize(beamCanvas);
   ({ rows: beamRows, cols: beamCols } = getLevelDims(currentLevels[currentLevel]));
+
+  // Reset all beam state (segments, travelDist, etc.)
   resetBeam();
+
+  // Show briefing if any
   const lvl = currentLevels[currentLevel];
+  if (lvl.briefing?.length) {
+    await runBriefing(lvl.briefing);
+  }
+  // Allow one frame for the DOM to settle before tutorial
+  await new Promise(requestAnimationFrame);
+
+  // Run tutorial if enabled
   if (lvl.tutorial && tutorialsActive) {
     await runTutorial(lvl.tutorial);
   }
+
+  // Re‐enable the renderer
   setAnimating(true);
-  
 }
+
 
 export function updateSidebarMetrics() {
   document.getElementById('movesUsed').textContent        = `moves used ${movesUsed}`;
@@ -259,10 +281,42 @@ renderBuilding(
 // placeholders
 let overlay, cancelBtn, beamCanvas;
 // STATIC TUTORIAL CONTROLS
-const staticControls = document.getElementById('tutorialStaticControls');
-const btnStaticSkip  = document.getElementById('staticSkipTutorial');
-const btnStaticDisable = document.getElementById('staticDisableTutorials');
+const staticControls       = document.getElementById('tutorialStaticControls');
+const btnStaticSkip        = document.getElementById('staticSkip');
+const btnStaticDisableTut  = document.getElementById('staticDisableTutorials');
+const btnStaticDisableBrf  = document.getElementById('staticDisableBriefings');
 
+function showStaticControls(mode) {
+  // always show the bar itself
+  staticControls.classList.remove('hidden');
+
+  // 1) update skip button label
+  btnStaticSkip.textContent = mode === 'briefing'
+    ? 'Skip Briefing'
+    : mode === 'tutorial'
+      ? 'Skip Tutorial'
+      : 'Skip';
+
+  // 2) only show the disable-tutorials button if we're in a tutorial and tutorials are still active
+  if (mode === 'tutorial' && tutorialsActive) {
+    btnStaticDisableTut.classList.remove('hidden');
+  } else {
+    btnStaticDisableTut.classList.add('hidden');
+  }
+
+  // 3) only show the disable-briefings button if we're in a briefing and briefings are still active
+  if (mode === 'briefing' && briefingsActive) {
+    btnStaticDisableBrf.classList.remove('hidden');
+  } else {
+    btnStaticDisableBrf.classList.add('hidden');
+  }
+}
+
+function hideStaticControls() {
+  staticControls.classList.add('hidden');
+}
+
+let beamLoopStarted = false;
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -270,27 +324,32 @@ document.addEventListener('DOMContentLoaded', () => {
   cancelBtn  = document.getElementById('cancelPlacement');
   beamCanvas = document.getElementById('beamCanvas');
   beamCtx    = beamCanvas.getContext('2d');
-  
+  btnStaticSkip.addEventListener('click', skipIntros);
 
-  btnStaticSkip.addEventListener('click', () =>
-    window.dispatchEvent(new Event('tutorial:skip'))
-  );
-
-  btnStaticDisable.addEventListener('click', () => {
+  btnStaticDisableTut.addEventListener('click', () => {
     tutorialsActive = false;
     setCookie('tutorialsActive', 'false');
-    // uncheck every settings checkbox
     document.querySelectorAll('#chkTutorials').forEach(cb => cb.checked = false);
     window.dispatchEvent(new Event('tutorial:skip'));
   });
 
+  btnStaticDisableBrf.addEventListener('click', () => {
+    briefingsActive = false;
+    setCookie('briefingsActive', 'false');
+    document.querySelectorAll('#chkBriefings').forEach(cb => cb.checked = false);
+    window.dispatchEvent(new Event('briefing:skip'));
+  });
   
+
   // initialize dims for level 0
   ({ rows: beamRows, cols: beamCols } = getLevelDims(levels[currentLevel]));
   // kick off the very first animation
-  resetBeam();
-  setAnimating(true);
-  animateBeam(beamCtx);
+  resetBeam()
+  if (!beamLoopStarted) {
+    beamLoopStarted = true;
+    setAnimating(true);        // allow drawing
+    animateBeam(beamCtx);      // kick off the single-master loop
+  }
 
   // grab level elements
   const { rows, cols }  = getLevelDims(levels[currentLevel]);
@@ -357,33 +416,43 @@ document.addEventListener('DOMContentLoaded', () => {
       
     },
     onSettings() {
-      const modal         = document.getElementById('settingsModal');
-      const wrapper       = document.getElementById('settingsContentWrapper');
-      const template      = document.getElementById('settingsTemplate');
-      const closeBtn      = document.getElementById('closeSettings');
+      const settingsModal         = document.getElementById('settingsModal');
+      const settingsWrapper       = document.getElementById('settingsContentWrapper');
+      const settingsTemplate      = document.getElementById('settingsTemplate');
+      const settingsCloseBtn      = document.getElementById('closeSettings');
 
-      wrapper.innerHTML = ''; // Clear only the injected part
-      wrapper.appendChild(template.content.cloneNode(true));
+      settingsWrapper.innerHTML = ''; // Clear only the injected part
+      settingsWrapper.appendChild(settingsTemplate.content.cloneNode(true));
 
-      const chk = wrapper.querySelector('#chkTutorials');
+      const chk = settingsWrapper.querySelector('#chkTutorials');
       if (chk) {
-        chk.checked = getCookie('tutorialsActive') === 'true';
+        chk.checked = getCookie('tutorialsActive') !== 'false';
         chk.onchange = () => {
           const val = chk.checked;
           setCookie('tutorialsActive', val);
           window.tutorialsActive = val;
         };
       }
+      const chkBriefings = settingsWrapper.querySelector('#chkBriefings');
+      if (chkBriefings) {
+        chkBriefings.checked = getCookie('briefingsActive') !== 'false';
+        chkBriefings.onchange = () => {
+          const val = chkBriefings.checked;
+          setCookie('briefingsActive', val);
+          briefingsActive = val;   
+        };
+      }
 
-      closeBtn.onclick = () => {
-        modal.classList.add('hidden');
+
+      settingsCloseBtn.onclick = () => {
+        settingsModal.classList.add('hidden');
       };
 
-      modal.classList.remove('hidden');
+      settingsModal.classList.remove('hidden');
 
-      modal.onclick = (e) => {
-        if (e.target === modal) {
-          modal.classList.add('hidden');
+      settingsModal.onclick = (e) => {
+        if (e.target === settingsModal) {
+          settingsModal.classList.add('hidden');
         }
       };
     },
@@ -459,6 +528,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (i <= unlockedUpTo || lvls !== levels) {
         li.classList.add('unlocked');
         li.addEventListener('click', () => {
+          skipIntros();
           parentModal.classList.add('hidden');
           if (parentModal === document.getElementById('pauseMenu')) {
             pauseBtn.innerHTML = '❚❚';
@@ -482,6 +552,10 @@ document.addEventListener('DOMContentLoaded', () => {
       levelContainer.append(li);
     });
   }
+
+  window.addEventListener('briefings:toggle', e => {
+    briefingsActive = e.detail;
+  });
 
 
 
@@ -507,7 +581,12 @@ document.addEventListener('DOMContentLoaded', () => {
       GRID SETUP
      ==================== */
   
-  window.addEventListener('resize', debounce(() => syncCanvasSize(ctx.canvas), 100));
+  window.addEventListener('resize',
+    debounce(() => {
+      syncCanvasSize(beamCanvas);
+      syncCanvasSize(lightCanvas);
+    }, 100)
+  );
 
   // CLICK on cancel aborts
   cancelBtn.addEventListener('click', () => {
@@ -611,6 +690,7 @@ document.addEventListener('DOMContentLoaded', () => {
         break;
 
       case 'converter':
+        window.dispatchEvent(new Event('tutorial:converter'));
         highlightCell(row, col, 'converter');
         break;
 
@@ -646,7 +726,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const score          = Math.floor(basePoints * (1 + nearMissCount/10) * litPct);
 
           
-          // if campaign level, update our stats object
+          // if campaign level, update stats object
           if (currentLevels === levels) {
             levelStats[currentLevel] = {
               unlocked:       true,
@@ -671,8 +751,24 @@ document.addEventListener('DOMContentLoaded', () => {
         break;
 
       case 'portal':
+        window.dispatchEvent(new Event('tutorial:portal'));
         // teleport logic held in beam.js
         break;
+
+      case 'cake':
+      // 1) replace the cake cell with a blob
+      const cakeEl = document.querySelector(
+        `#grid .cell[data-row="${row}"][data-col="${col}"]`
+      );
+      if (cakeEl) cakeEl.dataset.type = 'blob';
+
+      // 2) optionally dispatch an event if you want to hook a tutorial step
+      window.dispatchEvent(new CustomEvent('tutorial:cake'));
+
+      // 3) you can also highlight it briefly
+      highlightCell(row, col, 'cake');
+      break;
+
     }
   });
   // animateBeam(beamCanvas.getContext('2d'), rows, cols);
@@ -809,7 +905,7 @@ function campaignProgressArray(levelCount) {
 
 function refreshBuilding() {
   const levelCount      = levels.length;
-  const windowsPerRow   = 8;   // or whatever your design uses
+  const windowsPerRow   = 8;  
   const progressArr     = campaignProgressArray(levelCount);
   renderBuilding("building-container", windowsPerRow, progressArr);
 }
@@ -818,8 +914,11 @@ function refreshBuilding() {
 // BRIEFING & TUTORIAL
 
 async function runBriefing(lines) {
+  if (!briefingsActive) return;
+  showStaticControls('briefing');
+
   return new Promise(resolve => {
-    // 1) build and insert the overlay
+    // 1) Build and insert the overlay
     const overlay = document.createElement('div');
     overlay.id = 'briefingOverlay';
     overlay.innerHTML = `
@@ -836,14 +935,22 @@ async function runBriefing(lines) {
     let char   = 0;
     let typing = null;
 
-    // helper to set the correct button label
+    // 2) Skip handler
+    function onSkipBrief() {
+      cleanup();
+      resolve();
+    }
+    window.addEventListener('tutorial:skip', onSkipBrief);
+    window.addEventListener('briefing:skip', onSkipBrief);
+
+    // 3) Helper to update button label
     function updateButtonLabel() {
       nextBtn.textContent = idx < lines.length - 1
         ? 'Next'
         : 'Start Level';
     }
 
-    // type one line into its own <p>
+    // 4) Type one line into its own <p>
     function typeLine() {
       const p = document.createElement('p');
       p.className = 'briefing-line';
@@ -860,10 +967,9 @@ async function runBriefing(lines) {
       }, 30);
     }
 
-    // advance either by skipping typing or moving to next line
+    // 5) Advance either by finishing typing or moving to next line
     function advance() {
       if (typing) {
-        // finish this line instantly
         clearInterval(typing);
         typing = null;
         const p = txtContainer.lastElementChild;
@@ -875,13 +981,13 @@ async function runBriefing(lines) {
           nextBtn.classList.add('hidden');
           typeLine();
         } else {
-          // all done
           cleanup();
           resolve();
         }
       }
     }
 
+    // 6) Spacebar also advances
     function onKey(e) {
       if (e.code === 'Space') {
         e.preventDefault();
@@ -889,12 +995,17 @@ async function runBriefing(lines) {
       }
     }
 
+    // 7) Teardown
     function cleanup() {
       overlay.remove();
       document.removeEventListener('keydown', onKey);
+      window.removeEventListener('tutorial:skip', onSkipBrief);
+      window.removeEventListener('briefing:skip', onSkipBrief);
+      // Hide the shared Skip/Disable bar again
+      if (staticControls) hideStaticControls();
     }
 
-    // set up events
+    // 8) Wire events
     overlay.addEventListener('click', advance);
     nextBtn.addEventListener('click', e => {
       e.stopPropagation();
@@ -902,19 +1013,19 @@ async function runBriefing(lines) {
     });
     document.addEventListener('keydown', onKey);
 
-    // kick off the first line
+    // 9) Start first line
     typeLine();
   });
 }
+
 
 
 async function runTutorial(steps) {
   // allow global skip if the user disables tutorials
   if (!tutorialsActive) return;
   let skipAll = false;
-  staticControls.classList.remove('hidden');
 
-  // 0) build overlay if needed
+  // build overlay if needed
   let overlay = document.getElementById('tutorialOverlay');
   staticControls.classList.remove('hidden');
   if (!overlay) {
@@ -926,18 +1037,38 @@ async function runTutorial(steps) {
         <button id="tutorialBtn" class="hidden">Next</button>
       </div>`;
     document.body.appendChild(overlay);
-  };
-
+  }
 
   const txt  = overlay.querySelector('#tutorialText');
   const btn  = overlay.querySelector('#tutorialBtn');
   const box  = overlay.querySelector('#tutorialBox');
   const grid = document.getElementById('grid');
 
+  showStaticControls('tutorial');
   overlay.classList.remove('hidden');
 
   for (const step of steps) {
     if (skipAll) break;
+
+    // —— NEW: pause-until step —— 
+    if (step.pauseUntil) {
+      // hide tutorial UI completely
+      hideStaticControls();
+      overlay.classList.add('hidden');
+      grid.classList.remove('tutorial-restrict');
+      // wait for the event
+      await new Promise(resolve => {
+        const handler = () => {
+          window.removeEventListener(step.pauseUntil, handler);
+          resolve();
+        };
+        window.addEventListener(step.pauseUntil, handler);
+      });
+      // restore tutorial UI (but leave grid unlocked)
+      showStaticControls('tutorial');
+      overlay.classList.remove('hidden');
+      continue;
+    }
 
     // a) highlight
     let hiliteEl = null;
@@ -946,34 +1077,36 @@ async function runTutorial(steps) {
       if (hiliteEl) hiliteEl.classList.add('tutorial-highlight');
     }
 
-    // b) position box under highlight (or center)
+    // b) position box
     if (hiliteEl) {
       const rect = hiliteEl.getBoundingClientRect();
       box.style.top  = `${rect.bottom + 8}px`;
       box.style.left = `${rect.left}px`;
       box.style.transform = '';
     } else {
-      box.style.top        = `50%`;
-      box.style.left       = `50%`;
-      box.style.transform  = `translate(-50%, -50%)`;
+      box.style.top       = `50%`;
+      box.style.left      = `50%`;
+      box.style.transform = `translate(-50%, -50%)`;
     }
 
     // c) fill text & button
-    txt.innerHTML    = step.text.replace(/\n/g,'<br>');
-    btn.textContent  = step.waitFor ? 'Waiting…' : 'Next';
+    txt.innerHTML   = (step.text || '').replace(/\n/g,'<br>');
+    btn.textContent = step.waitFor ? 'Waiting…' : 'Next';
     btn.classList.toggle('hidden', !!step.waitFor);
 
-    // d) decide which layer intercepts pointer-events
-    if (step.waitFor === 'tutorial:placement-started' ||
-        step.waitFor === 'tutorial:placement-confirmed') {
-      // let everything go through to the grid
+    // d) pointer-events: allow click-through on certain waitFor
+    if (
+      step.waitFor === 'tutorial:placement-started' ||
+      step.waitFor === 'tutorial:placement-confirmed' ||
+      step.waitFor === 'tutorial:backslash-confirmed' ||
+      step.waitFor === 'tutorial:converter'
+    ) {
       overlay.style.pointerEvents = 'none';
     } else {
-      // catch clicks on overlay (for Next/Waiting)
       overlay.style.pointerEvents = 'auto';
     }
 
-    // e) lock grid if not explicitly allowed
+    // e) lock grid by default
     grid.classList.add('tutorial-restrict');
     if (hiliteEl) hiliteEl.classList.add('tutorial-allow');
     (step.allow || []).forEach(sel =>
@@ -981,19 +1114,17 @@ async function runTutorial(steps) {
         el.classList.add('tutorial-allow')
       )
     );
-    // always allow the Next button itself
     btn.classList.add('tutorial-allow');
 
-    // f) await the appropriate interaction
+    // f) await user interaction or event
     await new Promise(resolve => {
       const cleanups = [];
 
-      // 1) overlay click => advance, if we're not waiting for an event
+      // 1) if no waitFor, clicking anywhere advances
       if (!step.waitFor) {
         const onAny = () => finish();
         overlay.addEventListener('click', onAny);
         cleanups.push(() => overlay.removeEventListener('click', onAny));
-        // spacebar too
         const onKey = e => { if (e.code === 'Space') finish(); };
         window.addEventListener('keydown', onKey);
         cleanups.push(() => window.removeEventListener('keydown', onKey));
@@ -1010,10 +1141,12 @@ async function runTutorial(steps) {
         window.addEventListener(step.waitFor, onEvt);
         cleanups.push(() => window.removeEventListener(step.waitFor, onEvt));
       }
+
+      // 4) skip handler
       const onSkip = () => {
         skipAll = true;
         finish();
-      }
+      };
       window.addEventListener('tutorial:skip', onSkip);
       cleanups.push(() => window.removeEventListener('tutorial:skip', onSkip));
 
@@ -1030,6 +1163,11 @@ async function runTutorial(steps) {
   }
 
   // tear down
-  staticControls.classList.add('hidden');
+  hideStaticControls();
   overlay.remove();
+}
+
+function skipIntros() {
+  window.dispatchEvent(new Event('tutorial:skip'));
+  window.dispatchEvent(new Event('briefing:skip'));
 }

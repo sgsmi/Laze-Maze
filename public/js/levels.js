@@ -27,7 +27,7 @@ export function getLevelDims(level) {
 
 export const levels = [
   {
-  name: "Level 1 - Introduction",
+  name: "Training - 101",
   description: "Learn how to use mirrors to reach your target.",
   maxMirrors: 10,
   layout: [
@@ -40,8 +40,8 @@ export const levels = [
     ['#', '#', '#', '#', '#', '#', '#']
   ],
     briefing: [
-      "Welcome to the team, Agent. You come highly recommended from the UNIVERSITY OF LASERS AND SCI FI...",
-      "We don't have a lot of time so the important thing is, you're breaching a skyscraper, using a laser, and mirrors, to defeat a rogue AI superintelligence...",
+      "Welcome to the team, Agent. You come highly recommended from the UNIVERSITY OF LASERS and we're in need of your particular set of skills...",
+      "We need you to breach a skyscraper using a laser, traverse each floor using mirrors and traps, to defeat a rogue AI superintelligence...",
       "I know, I know, listen. There's no time to waste, I'll explain while you're in there.",
       "GO GO GO!",
       // "This mission is an important one... ",
@@ -67,8 +67,7 @@ export const levels = [
 
       { selector: '.cell[data-row="1"][data-col="5"]',
         text: "Now, let's try placing that mirror again",
-        waitFor: "tutorial:placement-started",
-         },
+        waitFor: "tutorial:placement-started",},
 
       { selector: '.cell[data-row="1"][data-col="5"]',
         text: "You can press Slash or Backslash to place a mirror. You can also move your mouse cursor to change the orientation and click anywhere on the grid to confirm. Try one of those now.",
@@ -133,7 +132,7 @@ export const levels = [
   ]
 },
 {
-  name: "Level 4 - Spicy Utility Room",
+  name: "Training - Bomb Cells",
   description: "It looks like the caretaker has a hobby!",
   maxMirrors: 10,
   layout: [
@@ -144,7 +143,7 @@ export const levels = [
     ['#', '#', '#', '#', '#']
   ],
    briefing: [
-    "It looks like the caretaker is keeping more than just cleaning supplies in here!",
+    "It looks like the caretaker is keeping more than just cleaning supplies in the Utility Room!",
     "Bombs are dangerous. If your beam hits one, kaboom! 💥",
     "Make sure you don't snag one on your way past, this laser will light that fuse faster than you can say 'OOPS'."
   ],
@@ -153,28 +152,143 @@ export const levels = [
   ]
 },
 
+{
+  name: "Corridors of DOOOOOM",
+  description: "A little forward planning can go a looooooong way.",
+  maxMirrors: 10,
+  layout: [
+    ['#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#'],
+    ['#', '.', '.', '.', '.', '.', '.', '.', '.', 'B', 'B', 'B', '#'],
+    ['#', '.', '.', '.', '.', '.', '.', '.', '.', 'B', '.', 'B', '#'],
+    ['#', '.', '.', '.', '.', '.', '.', '.', '.', 'B', '.', 'B', '#'],
+    ['#', '.', 'B', '.', '.', '.', '.', '.', '.', '.', '.', 'B', '#'],
+    ['#', '.', 'B', '.', '.', '.', '.', '.', '.', '.', '.', 'B', '#'],
+    ['#', '.', 'T', '.', '.', '.', '.', '.', '.', 'B', '.', 'B', '#'],
+    ['#', '.', '.', '.', '.', '.', '.', '.', '.', 'B', '.', 'B', '#'],
+    ['#', '.', '.', '.', '.', '.', '.', '.', '.', 'B', '.', 'B', '#'],
+    ['#', '#', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', '.', 'B', '#'],
+    ['#', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', 'B', '#'],
+    ['#', 'S-U', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', '#'],
+    ['#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#', '#']
+  ],
+  briefing: [
+    "A little forward planning can go a looooooong way."
+  ],
+},
+
 // --- Portal Tutorial (small grid) ---
 {
-  name: "Level 5 – Portal Primer",
+  name: "Training - Portals",
   description: "Portals teleport your beam across the map.",
   maxMirrors: Infinity,
   layout: [
     ['#','#','#','#','#','#','#'],
-    ['#','.','.','S-R','.','.','#'],
-    ['#','.','#','#','#','.','#'],
-    ['#','P-A','.','.','.','P-A','#'],
-    ['#','.','#','#','#','.','#'],
-    ['#','.','.','T','.','.','#'],
+    ['#','P-A','#','S-R','.','.','#'],
+    ['#','.-L','#','#','#','.','#'],
+    ['#','.','.','K','#','P-A','#'],
+    ['#','.','.','.','#','#','#'],
+    ['#','.','.','.','-.L','T','#'],
     ['#','#','#','#','#','#','#']
   ],
   briefing: [
     "Portals link two cells — enter one and exit the other instantly."
   ],
   tutorial: [
-    { selector: '.cell[data-type="portal"]', text: "This is a portal. It teleports your beam to its matching portal." },
-    { selector: '.cell[data-row="3"][data-col="1"]', text: "Click this portal to preview your exit point.", waitFor: "tutorial:portal-preview", allow: ['.cell[data-row="3"][data-col="1"]'] }
+    { selector: '.cell[data-row="3"][data-col="5"]', 
+      text: "This is a portal. It teleports your beam to its matching portal. Give it a try " },
+    { selector: '.cell[data-row="1"][data-col="5"]', 
+      text: "Place a '\\' mirror here to use it.", 
+      waitFor: "tutorial:placement-started"},
+    { selector: '.cell[data-row="1"][data-col="5"]', 
+      text: "Place a '\\' mirror here to use it.", 
+      waitFor: "tutorial:backslash-confirmed"},
+    { pauseUntil: "tutorial:portal"},
+    { selector: '.cell[data-type="cake"]',
+      text: "Oh look, cake!"},
+    { pauseUntil: "tutorial:cake"},
+    { text: "Now why on earth would you do something like that? I was going to collect that later for us to share as a celebration of your certain victory!"},
+    { text: "Who am I kidding, I was going to keep it for myself. I can't lie to you boss, not about cake."}
   ]
 },
+{
+  name: "Training - Beam Converters",
+  description: "Not all beams were created equal.",
+  maxMirrors: 10,
+  layout: [
+    ['#', '#', '#', '#', '#', '#', '#', '#'],
+    ['#', '.', '.', 'S-D', '.', '.', '.', '#'],
+    ['#', '.', '.', '.', '.', '.', '.', '#'],
+    ['#', '.', '.', '.', '.', '.', '.', '#'],
+    ['#', '.', '.', '.', 'C-R', '.', '.', '#'],
+    ['#', '.', '.', '.', '.-L', '.', '.', '#'],
+    ['#', '.', '.', 'T-R', '.', '.', '.', '#'],
+    ['#', '#', '#', '#', '#', '#', '#', '#']
+  ],
+  briefing: ["Not all beams were created equal."],
+  tutorial: [
+    { selector: '.cell[data-type="target"]',
+      text: "Some targets are tuned for specific laser frequencies, we won't get through here without some help."
+    },
+    { selector: '.cell[data-type="target"]',
+      text: "Lucky for us, our gracious host needs to use these access points just as much as us.",
+    },
+    { selector: '.cell[data-type="converter"]',
+      text: "Go ahead. Try running your beam through that conveniently placed converter.", },
+    { pauseUntil: "tutorial:converter" },
+    { text: "Nice work, now bring it home, soldier." }
+  ]
+},
+{
+  name: "Training - Filters",
+  description: "You shall not pass! Unless...",
+  maxMirrors: 10,
+  layout: [
+    ['#', '#', '#', '#', '#', '#', '#', '#'],
+    ['#', '.', '.', 'S-D', '.-L', 'F-B', '.', '#'],
+    ['#', '.', '.', '.', '.', 'F-B', '.', '#'],
+    ['#', '.', '.', '.', 'C-B', 'F-B', '.', '#'],
+    ['#', '.-L', '.', '.', '.-L', 'F-B', '.', '#'],
+    ['#', 'F-B', 'F-B', 'F-B', 'F-B', 'F-B', '.', '#'],
+    ['#', 'T-B', '.-L', '.', '.', '.', '.', '#'],
+    ['#', '#', '#', '#', '#', '#', '#', '#']
+  ],
+  briefing: ["Remember tuned targets? Introducing... tuned walls!"],
+  tutorial: [
+    { selector: '.cell[data-row="5"][data-col="3"]',
+      text: "You won't get past these without a little help from a trusty old beam converter."
+    },
+    { selector: '.cell[data-type="converter"]',
+      text: "Try running your beam through here",
+    }
+  ]
+},
+{
+  name: "Training - Alarms",
+  description: "Security systems? Really?",
+  maxMirrors: 10,
+  layout: [
+    ['#', '#', '#', '#', '#', '#', '#', '#', '#'],
+    ['#', 'T', '.-L', '#', '.', '.', '.', '.', '#'],
+    ['#', '#', '.', '#', '.', '.', '.', '.', '#'],
+    ['#', '.', '.', '.', '.', '.', '.', '.-L', '#'],
+    ['#', 'A-20', 'A-20', 'A-20', 'A-20', 'A-20', 'A-20', 'A-20', '#'],
+    ['#', '#', '#', '#', '.', '.', '.', '.', '#'],
+    ['#', '.', '.', '.', '.', '.', '.', '.', '#'],
+    ['#', '.', 'S-U', '.', '.', '.', '.', '.-L', '#'],
+    ['#', '#', '#', '#', '#', '#', '#', '#', '#']
+  ],
+  briefing: ["You thought the security was lax at E.V.AI.L Inc.? Think again!"],
+  tutorial: [
+    { selector: '.cell[data-row="4"][data-col="4"]',
+      text: "Unfortunately, I'm still a trainee technician, so I can't disable these for you."
+    },
+    { selector: '.cell[data-row="4"][data-col="4"]',
+      text: "Once you've triggered an alarm, the clock is ticking so get to the target to disable the failsafe in time.",
+    }
+  ]
+},
+
+
 
 // --- Portal Puzzles (10×10) ---
 {

@@ -27,6 +27,8 @@ function parseCellCode(code) {
       return { type: 'alarm', time: Number(suffix) || 10 };
     case 'C': // beam converter
       return { type: 'converter', color: suffix };
+    case 'K': // cake cell!
+      return { type: 'cake' };
     case '.':
       return { type: 'empty', variant: suffix };
     default:  return { type: 'empty' };
