@@ -1,6 +1,10 @@
-import { inMode,
-         modeToggle,
-         setMode } from './index.js'
+import {    inMode,
+            modeToggle,
+            setMode,
+            placingCell,
+            exitPlacement  }   from './index.js'
+import {    setCookie, 
+            getCookie      }   from './utils.js'
 // TODO: Create master menu file that includes all menu-related functions
 // and handles the display of different menus like main menu, pause menu, etc.
 
@@ -21,15 +25,35 @@ import { inMode,
 
 /**
  * Main Menu (title screen) wiring.
- * @param {{onPlay:Function, onLevels:Function, onLevelCreator:Function, onHowTo:Function}} cfg
+ * @param {{onPlay:Function, onLevels:Function, onLevelCreator:Function, onSettings:Function, onHowTo:Function}} cfg
  */
-export function setupMainMenu({onPlay, onLevels, onLevelCreator, onHowTo}) {
+export function setupMainMenu({onPlay, onLevels, onLevelCreator, onSettings, onHowTo}) {
     // Main menu elements
     const mainMenu          = document.getElementById('mainMenu');
     const btnPlay           = document.getElementById('btnPlay');
     const levelsBtnMain     = document.getElementById('btnLevelsMain');
     const howToBtn          = document.getElementById('btnHowTo');
     const btnLevelCreator   = document.getElementById('btnLevelCreator')
+    const btnSettings       = document.getElementById('btnSettingsMain')
+    const settingsPanel = document.getElementById('panel-settings');
+    const settingsTemplate = document.getElementById('settingsTemplate');
+
+    if (settingsPanel && settingsTemplate) {
+        const cloned = settingsTemplate.content.cloneNode(true);
+        settingsPanel.innerHTML = ''; // clear placeholder heading
+        settingsPanel.appendChild(cloned);
+
+        // Setup event listeners
+        const chkTutorials = settingsPanel.querySelector('#chkTutorials');
+        if (chkTutorials) {
+            chkTutorials.checked = getCookie('tutorialsActive') === 'true';
+            chkTutorials.onchange = () => {
+            const val = chkTutorials.checked;
+            setCookie('tutorialsActive', val);
+            window.tutorialsActive = val;
+            };
+        }
+    }
 
     // Level creator setup:
     const creatorAside = document.querySelector('#creator-aside');
@@ -46,6 +70,10 @@ export function setupMainMenu({onPlay, onLevels, onLevelCreator, onHowTo}) {
     btnLevelCreator.onclick = () => {
         onLevelCreator();
     };
+    btnSettings.onclick = () => {
+        console.log(`onSettings triggered`)
+        onSettings();
+    }
     howToBtn.onclick = () => {
         onHowTo(); // show how-to modal
     };
@@ -109,7 +137,11 @@ export function setupPauseMenu({ onResume, onRestart, onOpenKey, onSelectLevel }
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape') {
             if (inMode === 'playing') {
-                if (document.getElementById('btnBackToCreator').classList.contains('hidden')) {
+                if (placingCell !== null) { 
+                    exitPlacement(); 
+                    window.dispatchEvent(new CustomEvent('tutorial:placement-cancelled'));
+                    console.log(`dispatched cancel event`)
+                } else if (document.getElementById('btnBackToCreator').classList.contains('hidden')) {
                     setPaused(pauseMenu.classList.contains('hidden'));
                 } else {
                     modeToggle('creator');
@@ -118,6 +150,7 @@ export function setupPauseMenu({ onResume, onRestart, onOpenKey, onSelectLevel }
                 // add a yes/no prompt here
                 // if (confirm('Exit level creator? Any unsaved changes will be lost.')) 
                 modeToggle('main');
+                document.getElementById('pauseBtn')?.classList.remove('hidden');
             }
         }
     });
@@ -143,6 +176,7 @@ export function setupPauseMenu({ onResume, onRestart, onOpenKey, onSelectLevel }
         onResume();
     });
     btnRestart.addEventListener('click', () => {
+        window.dispatchEvent(new Event('tutorial:skip'));
         pauseMenu.classList.add('hidden');
         onRestart();
     });
@@ -152,6 +186,7 @@ export function setupPauseMenu({ onResume, onRestart, onOpenKey, onSelectLevel }
         onOpenKey();
     });
     btnToMainMenu.addEventListener('click', () => {
+        window.dispatchEvent(new Event('tutorial:skip'));
         // add a yes/no prompt here
         // if (!confirm('Return to main menu? Any unsaved progress will be lost.')) {
         //     return;
@@ -159,6 +194,36 @@ export function setupPauseMenu({ onResume, onRestart, onOpenKey, onSelectLevel }
         modeToggle('main');
         setPaused(pauseMenu.classList.contains('hidden'));
     });
+
+    const pauseSettings = document.getElementById('panel-settings');
+    const settingsTemplate = document.getElementById('settingsTemplate');
+    if (pauseSettings && settingsTemplate) {
+    const clone = settingsTemplate.content.cloneNode(true);
+    pauseSettings.innerHTML = '';          // clear placeholder
+    pauseSettings.appendChild(clone);
+    const chk = pauseSettings.querySelector('#chkTutorials');
+    chk.checked = getCookie('tutorialsActive') === 'true';
+    chk.onchange = () => {
+        const val = chk.checked;
+        setCookie('tutorialsActive', val);
+        window.tutorialsActive = val;
+    };
+    const chkBrf = pauseSettings.querySelector('#chkBriefings');
+    if (chkBrf) {
+    // default ON unless cookie explicitly "false"
+    chkBrf.checked = getCookie('briefingsActive') !== 'false';
+    chkBrf.onchange = () => {
+        const val = chkBrf.checked;
+        setCookie('briefingsActive', val);
+        // dispatch an event so index.js can pick it up
+        window.dispatchEvent(new CustomEvent('briefings:toggle', { detail: val }));
+    };
+    }
+
+
+    }
+
+    // need to somehow use the same #settingsContent inside #panel-settings so all event listeners are matched and cookie setting is unified. I don't want the close button to appear in the pause menu, however as this is a tab panel
 }
 
 /**

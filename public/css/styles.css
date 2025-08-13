@@ -1,4 +1,3 @@
-/* your existing #grid-container can go away, since you now have #board-play */
 #grid {
   display: grid;
   width: 100%;
@@ -30,6 +29,8 @@
   z-index: 20;
 }
 
+
+
 /* do not bring cells with type 'bomb' to front on hover */
 .cell[data-type="bomb"]:hover {
   z-index: 1; /* lower than other cells */
@@ -38,19 +39,6 @@
 /* WALL (solid block) */
 .cell[data-type="wall"] {
   background: #444;
-}
-
-/* TARGET (gold star) */
-.cell[data-type="target"] {
-  background: #222;
-}
-.cell[data-type="target"]::before {
-  content: "★";
-  position: absolute;
-  font-size: 1.5em;
-  color: gold;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
 }
 
 /* BOMB (circle with fuse) */
@@ -168,6 +156,111 @@
 .cell[data-type="start"][data-direction="R"]::before {
   transform: translate(-50%, -50%) rotate(-90deg);
 }
+/* ALARM CELL */
+.cell[data-type="alarm"] {
+  background: beige;
+}
+.cell[data-type="alarm"]::before {
+  content: "🔔";
+  color: white;
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  font-size: 1.5em;
+}
+.cell[data-type="alarm"].active {
+  animation: flashAlarm 1s infinite;
+}
+@keyframes flashAlarm {
+  0%,100% { background: red; }
+  50%    { background: darkred; }
+}
+
+/* BEAM CONVERTER */
+.cell[data-type="converter"] {
+  background: #222;
+  position: relative;
+}
+.cell[data-type="converter"]::before {
+  content: attr(data-color);
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  font-weight: bold;
+  text-shadow: 0 0 5px currentColor;
+}
+.cell[data-type="converter"][data-color="R"] { color: red; }
+.cell[data-type="converter"][data-color="G"] { color: lime; }
+.cell[data-type="converter"][data-color="B"] { color: cyan; }
+.cell[data-type="converter"].active {
+  box-shadow: 0 0 10px currentColor;
+}
+
+/* FILTER GLOW */
+.cell[data-type="filter"].active {
+  box-shadow: 0 0 8px currentColor;
+}
+
+/* TARGET (gold star) */
+.cell[data-type="target"] {
+  background: #222;
+}
+.cell[data-type="target"]::before {
+  content: "★";
+  position: absolute;
+  font-size: 1.5em;
+  color: gold;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Red Target */
+.cell[data-type="target"][data-color="R"]::before {
+  color: red;
+  text-shadow: 0 0 8px red, 0 0 16px #f00;
+}
+
+/* Green Target */
+.cell[data-type="target"][data-color="G"]::before {
+  color: lime;
+  text-shadow: 0 0 8px lime, 0 0 16px #0f0;
+}
+
+/* Blue Target */
+.cell[data-type="target"][data-color="B"]::before {
+  color: cyan;
+  text-shadow: 0 0 8px cyan, 0 0 16px #0ff;
+}
+
+/* ——— Cake (joke cell) ——— */
+.cell[data-type="cake"] {
+  background: #222;
+  position: relative;
+}
+.cell[data-type="cake"]::before {
+  content: "🍰";
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.5em;
+}
+
+/* ——— Blob aftermath ——— */
+.cell[data-type="blob"] {
+  background: #333;
+  position: relative;
+}
+.cell[data-type="blob"]::before {
+  content: "💥";
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.5em;
+}
+
+
+/* set colours of R/G/B targets */
+
 
 /* overlay dims the whole board */
 #overlay {
@@ -244,7 +337,7 @@
   padding: 2em;
   border-radius: 8px;
   text-align: center;
-  z-index: 100;
+  z-index: 115;
 }
 
 #gameOverModal button {
@@ -252,7 +345,7 @@
   padding: 0.5em 1em;
   font-size: 1em;
   cursor: pointer;
-  z-index: 100;
+  z-index: 115;
 }
 
 #winModal {
@@ -283,7 +376,7 @@
   display: flex;          /* center content */
   align-items: center;
   justify-content: center;
-  z-index: 200;           /* above everything */
+  z-index: 110;           /* above everything */
 }
 .levelList {
   list-style: none; padding: 0; margin: 1em 0;
@@ -350,7 +443,7 @@
   display: flex;          /* center content */
   align-items: top;
   justify-content: top;
-  z-index: 200;           /* above everything */
+  z-index: 110;           /* above everything */
   /* stack vertically */
   flex-direction: column;
   /* suggest what to remove please */
@@ -375,7 +468,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 200;
+  z-index: 105;
 }
 .modal-content {
   background: #111;
@@ -402,7 +495,7 @@
 }
 
 #pauseBtn {
-  z-index: 300; /* sit above the board */
+  z-index: 102; /* sit above the board */
 }
 
 /* Pause Menu tabs */
@@ -454,7 +547,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 300;           /* above the tabs/panels */
+  z-index: 50;           /* above the tabs/panels */
 }
 
 /* the white box inside it */
@@ -679,12 +772,13 @@
   box-shadow: 0 2px 6px rgba(0,0,0,0.5);
   z-index: 5;
 }
+
 .variant-bar.hidden {
   display: none;
 }
 .variant-bar button {
   flex: none;
-  width: 24px; height: 24px;
+  width: auto !important; height: 24px;
   border: none;
   background: transparent;
   cursor: pointer;
@@ -692,6 +786,7 @@
   font-weight: bold;
   border-radius: 2px;
   transition: 0.2s;
+  white-space: nowrap;
 }
 .variant-bar button.active {
   background: limegreen;
@@ -731,7 +826,7 @@
   position: absolute;
   top: 2rem; left: 2rem; right: 2rem; bottom: 2rem;
   overflow-y: auto;
-  z-index: 50;
+  z-index: 55;
 }
 #myLevelsContainer.hidden { display: none; }
 #myLevelsList {
@@ -775,4 +870,325 @@
 .level-select-tabs button.active {
   background: cyan;
   color: #000;
+}
+
+/* ------------------------------------------------------------------
+   Base building & face styles
+   ------------------------------------------------------------------ */
+#building-container {
+  width: 300px;
+  height: 400px;
+  margin: 0 auto;
+  margin-top: 50px;
+  perspective: 800px;
+}
+.building {
+  width: 80%; height: 80%;
+  position: relative;
+  transform-style: preserve-3d;
+  transform: rotateX(10deg) rotateY(-20deg);
+}
+.building .face {
+  position: absolute; top: 0; left: 0;
+  width: 100%;  height: 100%;
+  display: grid;
+  grid-gap: 6px;
+  background: #242424;
+  backface-visibility: hidden;
+  padding: 10px;
+}
+.building .face.left {
+  transform: rotateY(-45deg) translateX(-29.1%);
+  transform-origin: left center;
+}
+.building .face.right {
+  transform: rotateY(45deg) translateX(29.1%);
+  transform-origin: right center;
+}
+
+/* ------------------------------------------------------------------
+   Window base + overlays
+   ------------------------------------------------------------------ */
+/* 1) Every window gets this base colour */
+.building .face .window {
+  --b: 0;                             /* brightness 0…1 */
+  position: relative;
+  background: #cccccc8e;             
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+/* 2) ::before paints the bright core glow,
+      fading out to the *same* grey, never black */
+.building .face .window::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(255,235,150,var(--b)) 0%,
+    rgba(255,200,80,  var(--b)) 60%,
+    rgba(204,204,204,var(--b)) 100%
+  );
+  pointer-events: none;
+  transition: none;
+}
+
+/* 3) ::after is the “shade” overlay for unlit,
+      fading out as --b ramps up */
+.building .face .window::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: rgba(43,43,43, calc(0.7 * (1 - var(--b))));
+  pointer-events: none;
+  transition: 0.3s;
+}
+
+#alarmOverlay {
+  pointer-events: none;
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(255, 0, 0, 0.2);
+  mix-blend-mode: multiply;
+  z-index: 20; /* above grid but below modals */
+  opacity: 0;
+  transition: opacity 0.5s ease-in-out;
+  animation: pulse-alarm 1s infinite alternate;
+}
+
+#alarmOverlay.active {
+  opacity: 1;
+}
+
+@keyframes pulse-alarm {
+  from { background: rgba(255, 0, 0, 0.15); }
+  to   { background: rgba(255, 0, 0, 0.35); }
+}
+
+/* utility */
+.hidden { display: none; }
+
+
+/* BRIEFING & TUTORIAL */
+
+#briefingOverlay {
+  position:fixed; inset:0;
+  background:rgba(0,0,0,.9);
+  display:flex; align-items:center; justify-content:center;
+  z-index:101;
+}
+#briefingBox {
+  color:#fff; font-size:1.2rem; max-width:600px; text-align:center;
+}
+#briefingNext {
+  margin-top:1rem; padding:.5em 1em;
+}
+#tutorialCallout {
+  position:absolute;
+  background:rgba(0,0,0,.8);
+  color:#fff; padding:.5em; border-radius:4px;
+  max-width:200px; z-index:1000;
+  cursor:pointer;
+}
+
+
+
+.tutorial-highlight {
+  position: relative;
+  z-index: 105;
+  box-shadow: 0 0 8px cyan;
+  transition: box-shadow 1s;
+}
+#tutorialOverlay {
+  position: fixed;
+  inset:    0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 101;
+}
+#tutorialBtn {
+  margin-top: 1rem;
+}
+
+/* 1) make the grid pointer-dead by default in restricted mode */
+#grid.tutorial-restrict .cell {
+  pointer-events: none;
+}
+
+/* 2) override on allowed elements */
+#grid.tutorial-restrict .tutorial-allow {
+  pointer-events: auto !important;
+  z-index:      102;   /* bring it above the overlay */
+}
+
+
+/* when grid has this class, all cells are non-interactive */
+.tutorial-restrict .cell {
+  pointer-events: none;
+}
+
+/* any element we mark with .tutorial-allow regains interactivity */
+.tutorial-allow {
+  pointer-events: auto !important;
+}
+
+/* ensure cancel button floats above tutorial overlay */
+#cancelPlacement {
+  z-index: 201;    /* higher than tutorialOverlay (1000) */
+}
+
+/* revive the pop-over style for tutorial steps */
+#tutorialBox {
+  position: absolute;
+  background: rgba(0,0,0,0.8);
+  color: #fff;
+  padding: .5em 1em;
+  border-radius: 4px;
+  max-width: 200px;
+  cursor: default;
+  z-index: 102;    /* just above tutorialOverlay */
+  transition: top 0.2s, left 0.2s;
+}
+
+/* when we highlight an element, place the pop-over beneath it */
+.tutorial-highlight + #tutorialBox {
+  /* you may adjust offsets as needed */
+  top: calc(100% + 8px);
+  left: 0;
+}
+
+/* ============ tutorial pointer-events rules ============ */
+
+/* When the grid has .tutorial-restrict, block all pointer events inside it… */
+#grid.tutorial-restrict {
+  pointer-events: none;
+}
+
+/* …except on elements we explicitly mark .tutorial-allow */
+#grid.tutorial-restrict .tutorial-allow {
+  pointer-events: auto !important;
+  /* bring it above the overlay for clicks & mousemove */
+  z-index: 102;
+}
+
+/* Make sure the overlay itself only intercepts when we want it to */
+#tutorialOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.3);
+  z-index: 101;
+  /* pointer-events will be toggled in JS */
+}
+
+/* highlight styling (you already have something like this) */
+.tutorial-highlight {
+  z-index: 102 !important;
+  box-shadow: 0 0 15px 5px yellow;
+}
+
+/* small skip/disable bar inside tutorial box */
+#tutorialControls {
+  margin-top: .5em;
+  display: flex;
+  gap: .5em;
+  justify-content: flex-end;
+}
+#tutorialControls button {
+  font-size: .9rem;
+  padding: .3em .6em;
+}
+
+#settingsModal {
+  z-index: 110
+}
+
+.settings-content label {
+  display: block;
+  margin: 0.5em 0;
+}
+
+.static-tutorial-controls {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  gap: 0.5rem;
+  z-index: 115;            /* higher than modals & overlays */
+}
+.static-tutorial-controls button {
+  padding: 0.5em 1em;
+  background: #222;
+  color: #fff;
+  border: 1px solid cyan;
+  cursor: pointer;
+}
+#creator-aside .preview-cell[data-variant="L"],
+#creator-grid .cell[data-variant="L"] {
+  /* a pale glow so it reads as “lit” */
+  background: #fffcce;
+  box-shadow: inset 0 0 8px rgba(255,255,200,0.7);
+}
+
+
+/* Info-popup for level creator */
+.lc-info-popup {
+  position: absolute;
+  background: rgba(0,0,0,0.8);
+  color: #fff;
+  padding: 0.5em;
+  border-radius: 4px;
+  max-width: 180px;
+  font-size: 0.9em;
+  line-height: 1.3;
+  z-index: 100;
+}
+.info-btn {
+  background: none;
+  border: none;
+  color: cyan;
+  font-size: 1em;
+  cursor: help;
+  margin-left: 0.5em;
+  padding: 0;
+}
+.creator-item .info-btn:hover {
+  color: white;
+}
+
+/* Level Creator Warning Box */
+#lc-warning {
+  background: rgba(255, 0, 0, 0.9);
+  color: #fff;
+  padding: 0.5em 1em;
+  border-radius: 4px;
+  margin: 0.5em 0;
+  font-size: 0.9em;
+  max-width: 240px;       
+  white-space: normal;   
+  word-break: break-word; 
+}
+#lc-warning.hidden {
+  display: none;
+}
+
+/* —————————————————————
+   Level Creator Toasts
+   ————————————————————— */
+.lc-toast {
+  background: rgba(0,0,0,0.8);
+  color: white;
+  padding: 0.5em 1em;
+  border-radius: 4px;
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 1;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+  z-index: 105;
+}
+.lc-toast.fade-out {
+  opacity: 0;
 }

@@ -1,12 +1,11 @@
 // beam.js
 
-import { getCellDimensions }    from './utils.js';
-import { currentLevels,
-         currentLevel,
-         nearMissCount,
-         updateSidebarMetrics }         from './index.js';
-import { getLevelDims }        from './levels.js';
-
+import { getCellDimensions } from './utils.js';
+import { currentLevels, 
+         currentLevel, 
+         nearMissCount, 
+         updateSidebarMetrics } from './index.js';
+import { getLevelDims } from './levels.js';
 
 // Beam travel speed in pixels per millisecond
 const BEAM_SPEED = 0.4;
@@ -69,7 +68,7 @@ function traceOneSegment(r, c, dr, dc, rows, cols, cw, ch, canvas) {
     else if (dc ===  1) { ex = ec * cw;       ey = sy;         }
     else                { ex = (ec+1)*cw;     ey = sy;         }
   } else {
-    // mirror, portal, bomb, target, filter
+    // mirror, portal, bomb, target, filter, converter
     ex = (ec + 0.5) * cw;
     ey = (er + 0.5) * ch;
   }
@@ -78,7 +77,7 @@ function traceOneSegment(r, c, dr, dc, rows, cols, cw, ch, canvas) {
   return { sx, sy, ex, ey, length, type, er, ec, triggered: false };
 }
 
-// compute the full path including mirrors & portals (unchanged)
+// compute the full path including mirrors, portals, converters & filters
 function computeSegments(ctx, rows, cols) {
   const canvas = ctx.canvas;
   const { cellWidth: cw, cellHeight: ch } = getCellDimensions(canvas, cols, rows);
@@ -96,11 +95,20 @@ function computeSegments(ctx, rows, cols) {
   }
 
   const segs = [];
-  let overrideStart = null;
+  // track current “logical” colour
+  let currentColorKey = null;         // 'R' | 'G' | 'B'
+  let currentCssColor = '#f5e872';    // default beam colour
+  let overrideStart   = null;
+  const maxBounces    = rows * cols;
 
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < maxBounces; i++) {
     const seg = traceOneSegment(r, c, dr, dc, rows, cols, cw, ch, canvas);
 
+    // assign the colour we’re carrying in
+    seg.color = currentCssColor;
+    seg.colorKey = currentColorKey
+
+    // if we bounced or teleported, start from the exact collision point
     if (overrideStart) {
       seg.sx     = overrideStart.x;
       seg.sy     = overrideStart.y;
@@ -111,7 +119,7 @@ function computeSegments(ctx, rows, cols) {
 
     segs.push(seg);
 
-    // mirror?
+    // --- MIRROR ---
     if (seg.type === 'mirror-slash' || seg.type === 'mirror-backslash') {
       [dr, dc] = seg.type === 'mirror-slash'
         ? [-dc, -dr]
@@ -121,13 +129,44 @@ function computeSegments(ctx, rows, cols) {
       continue;
     }
 
-    // portal?
+    // --- CONVERTER ---
+    if (seg.type === 'converter') {
+      const cellEl = document.querySelector(
+        `#grid .cell[data-row="${seg.er}"][data-col="${seg.ec}"]`
+      );
+      const key    = cellEl.dataset.color; // 'R','G','B'
+      currentColorKey = key;
+      currentCssColor = key === 'R' ? 'red'
+                      : key === 'G' ? 'lime'
+                      : key === 'B' ? 'cyan'
+                      : currentCssColor;
+      overrideStart = { x: seg.ex, y: seg.ey };
+      r = seg.er + dr; c = seg.ec + dc;
+      continue;
+    }
+
+    // --- FILTER ---
+    if (seg.type === 'filter') {
+      const cellEl      = document.querySelector(
+        `#grid .cell[data-row="${seg.er}"][data-col="${seg.ec}"]`
+      );
+      const filterKey   = cellEl.dataset.color; // 'R','G','B'
+      // if doesn't match current, we stop
+      if (filterKey !== currentColorKey) {
+        // keep this segment as the terminal hit
+        break;
+      }
+      // else pass through
+      overrideStart = { x: seg.ex, y: seg.ey };
+      r = seg.er + dr; c = seg.ec + dc;
+      continue;
+    }
+
+    // --- PORTAL ---
     if (seg.type === 'portal') {
-      const thisId = document
-        .querySelector(
-          `#grid .cell[data-row="${seg.er}"][data-col="${seg.ec}"]`
-        )
-        .dataset.portalId;
+      const thisId = document.querySelector(
+        `#grid .cell[data-row="${seg.er}"][data-col="${seg.ec}"]`
+      ).dataset.portalId;
       const other = Array.from(
         document.querySelectorAll(
           `#grid .cell[data-type="portal"][data-portal-id="${thisId}"]`
@@ -146,22 +185,30 @@ function computeSegments(ctx, rows, cols) {
       break;
     }
 
-    // stop on wall, target, bomb, filter…
+    // if we hit an alarm, segment continues
+    if (seg.type === 'alarm') {
+      overrideStart = { x: seg.ex, y: seg.ey };
+      r = seg.er + dr; c = seg.ec + dc;
+      continue;
+    }
+
+    // --- anything else (wall, bomb, target…) stops us ---
     break;
   }
 
   return segs;
 }
 
-// computeCommonLength and updateBeamOnMapChange unchanged…
+// find how much of the old path still matches the new
 function computeCommonLength(oldSegs, newSegs) {
   let acc = 0, n = Math.min(oldSegs.length, newSegs.length);
   for (let i = 0; i < n; i++) {
     const o    = oldSegs[i], nseg = newSegs[i];
     const dxo  = o.ex - o.sx, dyo = o.ey - o.sy;
     const dxn  = nseg.ex - nseg.sx, dyn = nseg.ey - nseg.sy;
-    if (Math.sign(dxo)!==Math.sign(dxn) || Math.sign(dyo)!==Math.sign(dyn))
+    if (Math.sign(dxo) !== Math.sign(dxn) || Math.sign(dyo) !== Math.sign(dyn)) {
       break;
+    }
     acc += Math.min(o.length, nseg.length);
   }
   return acc;
@@ -179,15 +226,15 @@ export function updateBeamOnMapChange() {
 
 // ——— main animation loop ———
 export function animateBeam(ctx) {
-  // 1) resize canvas
+  // 1) resize
   syncCanvasSize(ctx.canvas);
 
-  // 2) figure out which level & its dimensions
+  // 2) find dims
   const { rows, cols } = getLevelDims(currentLevels[currentLevel]);
   const canvas = ctx.canvas;
   const { cellWidth: cw, cellHeight: ch } = getCellDimensions(canvas, cols, rows);
 
-  // 3) clear out old visited cells & recompute segments
+  // 3) recompute & maybe reset
   visitedCells.clear();
   const fresh = computeSegments(ctx, rows, cols);
   if (!segmentsCache ||
@@ -200,84 +247,76 @@ export function animateBeam(ctx) {
     travelDist    = 0;
   }
 
-  // 4) advance beam
+  // 4) advance
   const now = performance.now();
   const dt  = lastTimestamp ? now - lastTimestamp : 0;
   lastTimestamp = now;
   travelDist += BEAM_SPEED * dt;
 
-  // 5) draw preview (faint)
+  // 5) draw preview
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.beginPath();
   ctx.lineWidth   = 2;
-  ctx.strokeStyle = 'rgba(0,200,255,0.2)';
+  ctx.strokeStyle = 'rgba(251, 255, 0, 0.5)';
   for (const s of segmentsCache.list) {
     ctx.moveTo(s.sx, s.sy);
     ctx.lineTo(s.ex, s.ey);
   }
   ctx.stroke();
 
-  // 6) draw actual beam with moving “bumps”
+  // 6) draw actual beam
   if (animating) {
     let acc = 0;
     ctx.save();
-    ctx.lineWidth   = 6;
-    ctx.strokeStyle = '#0ff';
-    ctx.shadowBlur  = 12;
-    ctx.shadowColor = '#0ff';
-    ctx.beginPath();
+    ctx.lineWidth = 6;
     for (const seg of segmentsCache.list) {
       if (travelDist <= acc) break;
       const drawLen = Math.min(seg.length, travelDist - acc);
       const f       = drawLen / seg.length;
       const mx      = seg.sx + (seg.ex - seg.sx) * f;
       const my      = seg.sy + (seg.ey - seg.sy) * f;
+
+      ctx.strokeStyle = seg.color;
+      ctx.shadowColor = seg.color;
+      ctx.shadowBlur  = 12;
+
+      ctx.beginPath();
       ctx.moveTo(seg.sx, seg.sy);
       ctx.lineTo(mx, my);
+      ctx.stroke();
 
+      // record visited cells for lighting
       const sampleStep = Math.min(cw, ch) * 0.5;
       const samples    = Math.ceil(drawLen / sampleStep);
       for (let i = 0; i <= samples; i++) {
         const t2 = (i / samples) * f;
         const x2 = seg.sx + (seg.ex - seg.sx) * t2;
         const y2 = seg.sy + (seg.ey - seg.sy) * t2;
-        const r  = Math.floor(y2 / ch),
-              c  = Math.floor(x2 / cw);
+        const r  = Math.floor(y2 / ch), c = Math.floor(x2 / cw);
         visitedCells.add(`${r},${c}`);
       }
 
-      // check neighbors for near-miss bombs
-      for (let dr = -1; dr <= 1; dr++) {
-        for (let dc = -1; dc <= 1; dc++) {
-          if (dr === 0 && dc === 0) continue;
-          const nr = rows + dr, nc = cols + dc;
-          const neighbor = document.querySelector(
-            `#grid .cell[data-row="${nr}"][data-col="${nc}"]`
-          );
-          if (neighbor?.dataset.type === 'bomb') {
-            const key = `${nr},${nc}`;
-            if (!nearMissesSeen.has(key)) {
-              nearMissCount++;
-              nearMissesSeen.add(key);
-              updateSidebarMetrics();
-            }
-          }
-        }
-      }
-
-      // trigger hits
+      // trigger hits when we finish this segment
       if (!seg.triggered && travelDist >= acc + seg.length - 1e-3) {
         seg.triggered = true;
-        window.dispatchEvent(new CustomEvent('cell-hit', {
-          detail: { type: seg.type, row: seg.er, col: seg.ec }
-        }));
+        const cellEl = document.querySelector(
+          `#grid .cell[data-row="${seg.er}"][data-col="${seg.ec}"]`
+        );
+        const detail = {
+          type: seg.type, 
+          row: seg.er, 
+          col: seg.ec, 
+          color: seg.colorKey, 
+          ...(seg.type === 'alarm' && { time: Number(cellEl.dataset.time) })
+        };
+        window.dispatchEvent(new CustomEvent('cell-hit', { detail }));
       }
+
       acc += seg.length;
     }
-    ctx.stroke();
     ctx.restore();
 
-    // moving bumps (unchanged)
+    // moving bumps
     const totalLen = segmentsCache.list.reduce((sum, s) => sum + s.length, 0);
     const count    = 4;
     const spacing  = totalLen / count;
@@ -293,9 +332,9 @@ export function animateBeam(ctx) {
           ctx.save();
           ctx.beginPath();
           ctx.arc(px, py, radius, 0, 2*Math.PI);
-          ctx.fillStyle   = '#0ff';
+          ctx.fillStyle   = s.color;
           ctx.shadowBlur  = 8;
-          ctx.shadowColor = '#0ff';
+          ctx.shadowColor = s.color;
           ctx.fill();
           ctx.restore();
           break;
@@ -305,39 +344,40 @@ export function animateBeam(ctx) {
     }
   }
 
-  // 7) draw the “dark curtain” and punch out holes
+  // 7) punch‐holes overlay
   drawLightOverlay(rows, cols);
 
   // loop
   requestAnimationFrame(() => animateBeam(ctx));
 }
 
-
-// punch‐holes‐only overlay
+// punch‐holes‐only overlay (unchanged)
 function drawLightOverlay(rows, cols) {
   const lightCanvas = document.getElementById('lightCanvas');
   const lctx        = lightCanvas.getContext('2d');
 
-  // resize
   syncCanvasSize(lightCanvas);
 
-  // 1) darken entire board
   lctx.globalCompositeOperation = 'source-over';
   lctx.clearRect(0, 0, lightCanvas.width, lightCanvas.height);
   lctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
   lctx.fillRect(0, 0, lightCanvas.width, lightCanvas.height);
 
-  // 2) punch out circular “spotlights”
   lctx.globalCompositeOperation = 'destination-out';
   const { cellWidth, cellHeight } = getCellDimensions(lightCanvas, cols, rows);
-  const radius = Math.max(cellWidth, cellHeight) * 2;  // bright area radius
+  const radius = Math.max(cellWidth, cellHeight) * 2;
+
+  // add all static light-emitters to visitedCells
+  document.querySelectorAll('#grid .cell[data-variant="L"]').forEach(cell => {
+    const r = +cell.dataset.row, c = +cell.dataset.col;
+    visitedCells.add(`${r},${c}`);
+  });
 
   for (const key of visitedCells) {
     const [r, c] = key.split(',').map(Number);
     const x = (c + 0.5) * cellWidth;
     const y = (r + 0.5) * cellHeight;
     const grad = lctx.createRadialGradient(x, y, 0, x, y, radius);
-    // centre = full knock‐out, edge = no punch
     grad.addColorStop(0, 'rgba(0,0,0,1)');
     grad.addColorStop(1, 'rgba(0,0,0,0)');
     lctx.fillStyle = grad;
@@ -346,6 +386,5 @@ function drawLightOverlay(rows, cols) {
     lctx.fill();
   }
 
-  // restore normal compositing
   lctx.globalCompositeOperation = 'source-over';
 }

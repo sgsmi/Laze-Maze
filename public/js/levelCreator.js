@@ -8,15 +8,70 @@ import { saveCustomLevels,
          loadCustomLevels } from './utils.js';
 
 const CELL_TYPES = [
-  { key: 'start',  name: 'Start',        multiple: false,  codePrefix: 'S', iconType: 'start',        variants: ['U','R','D','L'], limit: 1 },
-  { key: 'wall',   name: 'Wall',         multiple: true,   codePrefix: '#', iconType: 'wall',         variants: [],         limit: Infinity },
-  { key: 'portal', name: 'Portal',       multiple: true,   codePrefix: 'P', iconType: 'portal',       variants: ['A','B','C'], limit: 3 },
-  { key: 'filter', name: 'Filter',       multiple: true,   codePrefix: 'F', iconType: 'filter',       variants: ['R','G','B'], limit: 3 },
-  { key: 'bomb',   name: 'Bomb',         multiple: true,   codePrefix: 'B', iconType: 'bomb',         variants: [],         limit: Infinity },
-  { key: 'target', name: 'Target',       multiple: false,  codePrefix: 'T', iconType: 'target',       variants: [],         limit: 1 },
-];
+  { key: 'empty',     name: 'Empty',        multiple: true,   codePrefix: '.',  iconType: 'empty',       variants: ['', 'L'],             limit: Infinity },
+  { key: 'start',     name: 'Start',        multiple: false,  codePrefix: 'S', iconType: 'start',        variants: ['U','R','D','L'], limit: 1 },
+  { key: 'wall',      name: 'Wall',         multiple: true,   codePrefix: '#', iconType: 'wall',         variants: [],                limit: Infinity },
+  { key: 'portal',    name: 'Portal',       multiple: true,   codePrefix: 'P', iconType: 'portal',       variants: ['A','B','C'],     limit: 6 },
+  { key: 'converter', name: 'Converter',    multiple: true,   codePrefix: 'C', iconType: 'converter',    variants: ['R','G','B'],     limit: Infinity },
+  { key: 'filter',    name: 'Filter',       multiple: true,   codePrefix: 'F', iconType: 'filter',       variants: ['R','G','B'],     limit: Infinity },
+  { key: 'bomb',      name: 'Bomb',         multiple: true,   codePrefix: 'B', iconType: 'bomb',         variants: [],                limit: Infinity },
+  { key: 'target',    name: 'Target',       multiple: false,  codePrefix: 'T', iconType: 'target',       variants: ['', 'R', 'G', 'B'],                limit: 1 },
+  { key: 'alarm',     name: 'Alarm',        multiple: true,   codePrefix: 'A', iconType: 'alarm',        variants: ['10','15','20'],  limit: Infinity },
+];  
+
+const VARIANT_LABELS = {
+  empty:     { '': 'Unlit', L: 'Lit' },
+  start:     { U: 'Up', R: 'Right', D: 'Down', L: 'Left' },
+  wall:      {},
+  portal:    { A: 'Portal A', B: 'Portal B', C: 'Portal C' },
+  converter: { R: 'Red', G: 'Green', B: 'Blue' },
+  filter:    { R: 'Red', G: 'Green', B: 'Blue' },
+  bomb:      {},
+  target:    { '': 'Any', R: 'Red', G: 'Green', B: 'Blue' },
+  alarm:     { '10': '10s', '15': '15s', '20': '20s' }
+};
+
+const TIP_TEXTS = {
+  empty:     "Empty cells do nothing—beams pass straight through.",
+  start:     "Start emits your beam in the chosen direction.",
+  wall:      "Wall blocks beams completely.",
+  portal:    "Portals teleport a beam from one matching letter to the other.",
+  converter: "Converters recolour your beam (R/G/B) so you can hit coloured targets.",
+  filter:    "Filters only let through the matching color—others are blocked.",
+  bomb:      "Bombs explode on contact—avoid touching them!",
+  target:    "Targets are your goal—redirect the beam here to win. Coloured variants only accept a matching beam from a beam converter.",
+  alarm:     "Alarms trigger a countdown when hit. Beat the clock!"
+};
+
+function getVariantLabel(typeKey, variant) {
+  const map = VARIANT_LABELS[typeKey];
+  return map
+    ? (map[variant] || variant || '—')
+    : (variant || '—');
+}
 
 let maxMirrors = 10; // default to 10
+
+// Utility: Serialize a level object into JS code string
+function serializeLevel(level) {
+  const layoutLines = level.layout.map(row => {
+    const cells = row.map(cell => `'${cell}'`).join(', ');
+    return `    [${cells}]`;
+  });
+  const layoutString = `[
+${layoutLines.join(',\n')}
+  ]`;
+
+  return `{
+  name: "${level.name}",
+  description: "${level.description}",
+  maxMirrors: ${level.maxMirrors},
+  layout: ${layoutString}
+},`;
+}
+
+
+
 
 export function initLevelCreator({
   aside, createContainer, maxRows = 10, maxCols = 10,
@@ -32,6 +87,12 @@ export function initLevelCreator({
     <button id="lc-save-btn">Save Level</button>
   `;
   aside.prepend(form);
+
+  const warningEl = document.createElement('div');
+  warningEl.id = 'lc-warning';
+  warningEl.className = 'lc-warning hidden';
+  aside.append(warningEl);
+
 
   const btnMyLevels      = aside.querySelector('#btnMyLevels');
   const myLevelsPanel    = aside.querySelector('#myLevelsContainer');
@@ -140,12 +201,40 @@ export function initLevelCreator({
   let selectedVariant = null;
   const variantMap = {};  // remembers last selected variant for each type
   const counts = {}
+
+  CELL_TYPES.forEach(type => {
+    // if this type has variants, use the first one; otherwise blank
+    variantMap[type.key] = type.variants.length
+      ? type.variants[0]
+      : '';
+  });
+
+  // show a temporary toast message that fades out
+  function showToast(msg) {
+    const toast = document.createElement('div');
+    toast.className = 'lc-toast';
+    toast.textContent = msg;
+    aside.append(toast);
+
+    // auto-fade after 1.5s
+    setTimeout(() => {
+      toast.classList.add('fade-out');
+      toast.addEventListener('transitionend', () => toast.remove());
+    }, 1500);
+  }
   
 
   // 1) Build the aside palette
   const palette = document.createElement('ul');
   palette.className = 'creator-palette';
   aside.append(palette);
+
+  // create one floating info‐popup
+  const infoPopup = document.createElement('div');
+  infoPopup.id = 'lc-info-popup';
+  infoPopup.className = 'lc-info-popup hidden';
+  aside.append(infoPopup);
+
 
   const variantBar = document.createElement('div');
   variantBar.className = 'variant-bar hidden';
@@ -162,17 +251,42 @@ export function initLevelCreator({
       <span class="label">${type.name}</span>
       <span class="count">0 / ${type.limit}</span>
     `;
-    li.addEventListener('click', () => selectType(type.key, li));
     palette.append(li);
+    updatePalettePreview(li, type.key, variantMap[type.key]);
+    li.addEventListener('click', () => selectType(type.key, li));
+
+        // ---- INFO BUTTON ----
+    const infoBtn = document.createElement('button');
+    infoBtn.className = 'info-btn';
+    infoBtn.textContent = 'ℹ';
+    infoBtn.title = `What is a ${type.name}?`;
+    // stop this click from selecting the tool
+    infoBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      // fill and position the popup
+      infoPopup.textContent = TIP_TEXTS[type.key] || '';
+      const rect = li.getBoundingClientRect();
+      // position below the li
+      infoPopup.style.top  = `${rect.bottom + window.scrollY + 4}px`;
+      infoPopup.style.left = `${rect.left + window.scrollX}px`;
+      infoPopup.classList.remove('hidden');
+      // auto‐hide on the next click anywhere
+      document.addEventListener('click', () => {
+        infoPopup.classList.add('hidden');
+      }, { once: true });
+    });
+    li.append(infoBtn);
+
+    
   });
 
   // 2) Seed the default “start” variant
-  variantMap['start'] = 'U';
+  variantMap['Empty'] = '';
 
   // 3) Auto-select the Start tool
-  const startLi = palette.querySelector('li[data-key="start"]');
+  const startLi = palette.querySelector('li[data-key="empty"]');
   if (startLi) {
-    selectType('start', startLi);
+    selectType('empty', startLi);
   }
 
   // Ensure the variant bar stays hidden on load
@@ -182,6 +296,7 @@ export function initLevelCreator({
   const exitBtn = document.getElementById('exitCreator');
   exitBtn.onclick = () => {
     modeToggle('main');
+    document.getElementById('pauseBtn')?.classList.remove('hidden');
   };
   const btnBack = document.getElementById('btnBackToCreator');
   const btnTest = document.createElement('button');
@@ -194,6 +309,8 @@ export function initLevelCreator({
       return alert('You must place exactly one Start cell to test.');
     }
     btnBack.classList.remove('hidden');
+    // hide the pause button:
+    document.getElementById('pauseBtn')?.classList.add('hidden');
     // 2) deep‐copy layout matrix so creator edits don’t bleed
     const testLayout = layout.map(r => [...r]);
     // 3) hand off to playing mode
@@ -230,72 +347,93 @@ export function initLevelCreator({
   });
   aside.append(btnClear);
 
+  // Add a "Copy Level to Clipboard" button
+  const btnCopy = document.createElement('button');
+  btnCopy.textContent = 'Copy Level to Clipboard';
+  btnCopy.className = 'creator-control';
+  btnCopy.addEventListener('click', () => {
+    // Gather current level data
+    const name = document.getElementById('lc-name').value.trim();
+    const description = document.getElementById('lc-desc').value.trim();
+    // `maxMirrors` and `layout` are the variables used throughout this file
+    const levelObj = { name, description, maxMirrors, layout };
+
+    // Serialize and copy
+    const codeSnippet = serializeLevel(levelObj);
+    navigator.clipboard.writeText(codeSnippet)
+      .then(() => alert('Level structure copied! Paste into levels.js.'))
+      .catch(err => alert('Copy failed: ' + err));
+  });
+  aside.append(btnCopy);
+
   // 2) Variant-picker logic + live preview update
-  function selectType(key, li) {
-    const hasVariants = CELL_TYPES.find(t => t.key === key).variants.length > 0;
+ function selectType(key, li) {
+  const typeDef = CELL_TYPES.find(t => t.key === key);
+  const hasVariants = typeDef.variants.length > 0;
 
-    // 1) If clicking the same type and the variant bar is visible, just hide it
-    if (selectedType?.key === key && !variantBar.classList.contains('hidden')) {
-      variantBar.classList.add('hidden');
-      return;
+  // 1) If clicking the same type and the variant bar is visible, just hide it
+  if (selectedType?.key === key && !variantBar.classList.contains('hidden')) {
+    variantBar.classList.add('hidden');
+    return;
+  }
+
+  // 2) Highlight the clicked <li>, un-highlight siblings
+  aside.querySelectorAll('.creator-item').forEach(item => {
+    item.classList.toggle('active', item === li);
+  });
+
+  // 3) Update selectedType
+  selectedType = typeDef;
+
+  // 4) Remove any existing variantBar from the DOM and clear it
+  if (variantBar.parentElement) {
+    variantBar.parentElement.removeChild(variantBar);
+  }
+  variantBar.innerHTML = '';
+
+  if (hasVariants) {
+    // 5) Ensure there's always a selected variant (default to first if none saved)
+    if (!variantMap[key] || !typeDef.variants.includes(variantMap[key])) {
+      variantMap[key] = typeDef.variants[0];
     }
+    selectedVariant = variantMap[key];
 
-    // 2) Highlight the clicked <li>, un-highlight siblings
-    aside.querySelectorAll('.creator-item').forEach(item => {
-      item.classList.toggle('active', item === li);
+    // 6) Create one button per variant
+    typeDef.variants.forEach(v => {
+      const btn = document.createElement('button');
+      btn.textContent = getVariantLabel(key, v);
+      btn.dataset.variant = v;
+      btn.classList.toggle('active', v === selectedVariant);
+
+      btn.addEventListener('click', e => {
+        e.stopPropagation(); // don’t bubble up to the <li>
+        // update selection
+        variantMap[key] = v;
+        selectedVariant = v;
+        // refresh active states
+        variantBar.querySelectorAll('button').forEach(b => {
+          b.classList.toggle('active', b.dataset.variant === v);
+        });
+        updatePalettePreview(li, key, v);
+      });
+
+      variantBar.appendChild(btn);
     });
 
-    // 3) Update selectedType
-    selectedType = CELL_TYPES.find(t => t.key === key);
+    // 7) Show the bar beneath this <li>
+    variantBar.classList.remove('hidden');
+    li.appendChild(variantBar);
 
-    // 4) Re-build the variantBar
-    if (variantBar.parentElement) variantBar.parentElement.removeChild(variantBar);
-    variantBar.innerHTML = '';
-
-    if (hasVariants) {
-      // 5) Create one button per variant
-      selectedType.variants.forEach(v => {
-        const btn = document.createElement('button');
-        btn.textContent = v;
-        btn.addEventListener('click', e => {
-          e.stopPropagation(); // don’t bubble up to the <li>
-          // un-highlight all
-          variantBar.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          selectedVariant = v;
-          variantMap[key] = v;               // remember it
-          updatePalettePreview(li, key, v);
-        });
-        variantBar.append(btn);
-      });
-
-      // 6) Restore last variant or default to first
-      const saved = variantMap[key];
-      if (saved && selectedType.variants.includes(saved)) {
-        selectedVariant = saved;
-      } else {
-        selectedVariant = selectedType.variants[0];
-        variantMap[key] = selectedVariant;
-      }
-
-      // 7) Highlight that variant button
-      variantBar.querySelectorAll('button').forEach(b => {
-        b.classList.toggle('active', b.textContent === selectedVariant);
-      });
-
-      // 8) Show the bar beneath this <li>
-      variantBar.classList.remove('hidden');
-      li.append(variantBar);
-
-    } else {
-      // no variants → clear
-      selectedVariant = null;
-      variantBar.classList.add('hidden');
-    }
-
-    // 9) Update the little preview icon
-    updatePalettePreview(li, key, selectedVariant);
+  } else {
+    // no variants → clear
+    selectedVariant = null;
+    variantBar.classList.add('hidden');
   }
+
+  // 8) Update the little preview icon
+  updatePalettePreview(li, key, selectedVariant);
+}
+
 
   // helper to sync the preview icon inside a palette <li>
   function updatePalettePreview(li, typeKey, variant) {
@@ -307,15 +445,29 @@ export function initLevelCreator({
     delete preview.dataset.direction;
     delete preview.dataset.portalId;
     delete preview.dataset.color;
+    delete preview.dataset.variant;
 
     // if there is a variant, set the correct data-attr
     if (variant) {
-      if (typeKey === 'start') {
-        preview.dataset.direction = variant;
-      } else if (typeKey === 'portal') {
-        preview.dataset.portalId = variant;
-      } else if (typeKey === 'filter') {
-        preview.dataset.color = variant;
+      switch (typeKey) {
+        case 'start':
+          preview.dataset.direction = variant;
+          break;
+        case 'portal':
+          preview.dataset.portalId = variant;
+          break;
+        case 'filter':
+          preview.dataset.color = variant;
+          break;
+        case 'converter':          // <— now handles converter!
+          preview.dataset.color = variant;
+          break;
+        case 'target':
+          preview.dataset.color = variant;
+          break;
+        case 'empty':
+          preview.dataset.variant = variant;
+          break;
       }
     }
   }
@@ -337,7 +489,8 @@ export function initLevelCreator({
               <button id="col-plus">+</button>
       </div>
       <div class="creator-controls-footer">
-        <input type="number" id="max-mirrors" placeholder="Max Mirrors" value="${maxMirrors}" min="0" />  
+        Max Mirrors:
+        <input type="number" id="max-mirrors" placeholder="Max Mirrors" value="${maxMirrors}" min="0"/> 
       </div>`
 
     // 1) Update maxMirrors on input change
@@ -376,34 +529,83 @@ export function initLevelCreator({
 
 
   // 5) Cell‐click handler
+  // helper to count occurrences of a code in layout
+  function countCode(code) {
+    return layout.flat().filter(ch => ch === code).length;
+  }
+
+  // compute all warnings from the current layout
+  function computeWarnings() {
+    const msgs = [];
+    // 1) Lonely portals
+    CELL_TYPES.find(t => t.key === 'portal').variants.forEach(v => {
+      const cnt = countCode(`P-${v}`);
+      if (cnt === 1) {
+        msgs.push(`Portals get lonely—add a matching “P-${v}” pair to complete it.`);
+      }
+    });
+
+    // 2) Missing converters for filters & targets
+    ['filter','target'].forEach(typeKey => {
+      CELL_TYPES.find(t => t.key === typeKey).variants.forEach(v => {
+        const code = (typeKey === 'filter' ? 'F' : 'T') + '-' + v;
+        if (countCode(code) > 0 && countCode(`C-${v}`) === 0) {
+          msgs.push(
+            `${getVariantLabel(typeKey, v)} ${CELL_TYPES.find(t => t.key === typeKey).name} placed ` +
+            `but no ${getVariantLabel('converter', v)} converter exists.`
+          );
+        }
+      });
+    });
+
+    return msgs;
+  }
+
+  // click handler
   gridEl.addEventListener('click', e => {
     if (inMode !== 'creator') return;
     const cell = e.target.closest('.cell');
     if (!cell || !selectedType) return;
     const r = +cell.dataset.row, c = +cell.dataset.col;
 
-    const code = selectedType.codePrefix
-            + (selectedVariant ? '-' + selectedVariant : '');
+    const existing = layout[r][c];
+    const existingPrefix = existing.split('-')[0];
+    const isReplacing = existing !== '.' && existingPrefix === selectedType.codePrefix;
+    const code = selectedType.codePrefix + (selectedVariant ? '-' + selectedVariant : '');
+    const isAdding = existing !== code;
 
-    const isAdding = layout[r][c] !== code;
-    
-    // block if trying to add a cell that exceeds its limit
-    // allow replacing existing cells with variants of the same type
-    if (isAdding && counts[selectedType.key] >= selectedType.limit && cell.dataset.type !== selectedType.key) {
-      // e.g. flash the button red, or just alert
-      alert(`You may only place up to ${selectedType.limit} ${selectedType.name}(s).`);
-      return;       // <-- bail out, no change
+    // PRE-CHECK TOASTS only when truly adding something new (not just swapping variants)
+    if (isAdding && !isReplacing) {
+      // a) Portal limit
+      if (selectedType.key === 'portal' && countCode(code) >= 2) {
+        showToast(`Only 2 portals of type ${selectedVariant} allowed.`);
+        return;
+      }
+      // b) Other type limits
+      if (selectedType.key !== 'portal' && counts[selectedType.key] >= selectedType.limit) {
+        showToast(`Only ${selectedType.limit} ${selectedType.name}(s) allowed.`);
+        return;
+      }
     }
 
-    // toggle
-    layout[r][c] = (layout[r][c] === code) ? '.' : code;
-
-
+    // TOGGLE (add / remove / replace)
+    layout[r][c] = isAdding ? code : '.';
     updateCounts();
     redraw();
-    console.log(`gridEl eventListener redraw()`)
+
+    // RE-COMPUTE persistent warnings
+    warningEl.classList.add('hidden');
+    warningEl.innerHTML = '';
+    const allWarnings = computeWarnings();
+    if (allWarnings.length) {
+      warningEl.innerHTML = allWarnings.map(w => `<p>${w}</p>`).join('');
+      warningEl.classList.remove('hidden');
+    }
   });
 
+
+
+  
   function redraw() {
     gridEl.innerHTML = '';
     console.log(`CREATE GRID CALLED FROM redraw()`)
