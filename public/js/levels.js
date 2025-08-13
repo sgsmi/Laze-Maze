@@ -187,7 +187,7 @@ export const levels = [
     ['#','.-L','#','#','#','.','#'],
     ['#','.','.','K','#','P-A','#'],
     ['#','.','.','.','#','#','#'],
-    ['#','.','.','.','-.L','T','#'],
+    ['#','.','.','.','.-L','T','#'],
     ['#','#','#','#','#','#','#']
   ],
   briefing: [
@@ -196,17 +196,12 @@ export const levels = [
   tutorial: [
     { selector: '.cell[data-row="3"][data-col="5"]', 
       text: "This is a portal. It teleports your beam to its matching portal. Give it a try " },
-    { selector: '.cell[data-row="1"][data-col="5"]', 
-      text: "Place a '\\' mirror here to use it.", 
-      waitFor: "tutorial:placement-started"},
-    { selector: '.cell[data-row="1"][data-col="5"]', 
-      text: "Place a '\\' mirror here to use it.", 
-      waitFor: "tutorial:backslash-confirmed"},
     { pauseUntil: "tutorial:portal"},
+    { text: "Nice work. If only it worked on humans..."},
     { selector: '.cell[data-type="cake"]',
-      text: "Oh look, cake!"},
+      text: "...Oh look, cake!"},
     { pauseUntil: "tutorial:cake"},
-    { text: "Now why on earth would you do something like that? I was going to collect that later for us to share as a celebration of your certain victory!"},
+    { text: "Now why on earth would you do something like that? I was going to collect that later for us to share as a celebration of your certain victory! Instead, you fry it with a four-thousand-degree laser. Nice..."},
     { text: "Who am I kidding, I was going to keep it for myself. I can't lie to you boss, not about cake."}
   ]
 },

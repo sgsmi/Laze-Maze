@@ -7,11 +7,7 @@
     "doc": "docs"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "prestart": "npm run copy",
-    "start": "live-server public --port=3000",
-    "copy": "copyfiles -u 2 src/js/*.js public/js && copyfiles -u 2 src/css/*.css public/css",
-    "build": "npm run copy && cp -R public/* dist/"
+    "start": "live-server public --port=3000"
   },
   "repository": {
     "type": "git",
@@ -25,7 +21,6 @@
   },
   "homepage": "https://github.com/sgsmi/Laze-Maze#readme",
   "devDependencies": {
-    "copyfiles": "^2.4.1",
     "live-server": "^1.2.2",
     "serve": "^14.2.4"
   }

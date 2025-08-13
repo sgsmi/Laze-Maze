@@ -94,7 +94,7 @@ export async function modeToggle(mode, opts = {}) {
       }
 
       
-      startLevel(lvls, idx);
+      await startLevel(lvls, idx);
       break;
     case 'creator':
       syncCanvasSize(creatorGrid)
@@ -143,44 +143,68 @@ const gameWrapper = document.getElementById('game-wrapper');
 const creatorWrapper = document.getElementById('creator-wrapper');
 
 let beamCtx, beamRows, beamCols;
+let placementKeyHandler = null; 
 
 // Mirror‐placement helpers
 export let placingCell = null, previewType = null;
+
 export function exitPlacement() {
   if (placingCell) {
     placingCell.classList.remove('selected','preview-slash','preview-backslash');
   }
-  placingCell = null; previewType = null;
+  placingCell = null;
+  previewType = null;
+
   overlay.classList.add('hidden');
   cancelBtn.classList.add('hidden');
+
   overlay.removeEventListener('mousemove', onMouseMove);
-  overlay.removeEventListener('click', confirmPlacement);
-  document.removeEventListener('keydown', e => {
-    if (e.key === '/'){
-      previewType = 'mirror-slash';
-      confirmPlacement();
-    }
-});
+  overlay.removeEventListener('click',    confirmPlacement);
+
+  // remove the exact handler we added
+  if (placementKeyHandler) {
+    document.removeEventListener('keydown', placementKeyHandler);
+    placementKeyHandler = null;
+  }
 }
+
 function enterPlacement(cell) {
-  placingCell = cell; previewType = null;
-  if (mirrorsLeft <= 0) { alert("No mirrors left!"); exitPlacement(); return; }
+  placingCell = cell;
+  previewType = null;
+
+  if (mirrorsLeft <= 0) { 
+    alert("No mirrors left!"); 
+    exitPlacement(); 
+    return; 
+  }
+
   cell.classList.add('selected');
   overlay.classList.remove('hidden');
   cancelBtn.classList.remove('hidden');
+
   overlay.addEventListener('mousemove', onMouseMove);
-  overlay.addEventListener('click', confirmPlacement);
-  document.addEventListener('keydown', e => {
-    if (e.key === '/'){
-      previewType = 'mirror-slash'
+  overlay.addEventListener('click',     confirmPlacement);
+
+  // attach one stable keydown handler and remember it
+  placementKeyHandler = (e) => {
+    if (e.key === '/') {
+      previewType = 'mirror-slash';
       confirmPlacement();
     } else if (e.key === '\\') {
-      previewType = 'mirror-backslash'
+      previewType = 'mirror-backslash';
       confirmPlacement();
+    } else if (e.key === 'Escape') {
+      // behave like clicking 'Cancel'
+      exitPlacement();
+      window.dispatchEvent(new CustomEvent('tutorial:placement-cancelled'));
+      console.log(`dispatched cancel event`);
     }
-  })
+  };
+  document.addEventListener('keydown', placementKeyHandler);
+
   window.dispatchEvent(new CustomEvent('tutorial:placement-started'));
 }
+
 function onMouseMove(e) {
   if (!placingCell) return;
   const rect = placingCell.getBoundingClientRect();
@@ -222,6 +246,9 @@ export function loadLevel(level, lvls = currentLevels) {
   console.log(`loadLevel(${level}) called, grid created with ${rows} rows and ${cols} cols`);
 }
 export async function startLevel(lvls = currentLevels, levelIndex = currentLevel) {
+  // Ensure no previous intro is still waiting for an event
+  endAllIntros();
+
   // Abort any in‐flight placement
   exitPlacement();
 
@@ -247,6 +274,8 @@ export async function startLevel(lvls = currentLevels, levelIndex = currentLevel
 
   // Reset all beam state (segments, travelDist, etc.)
   resetBeam();
+  // Re‐enable the renderer
+  setAnimating(true);
 
   // Show briefing if any
   const lvl = currentLevels[currentLevel];
@@ -259,10 +288,22 @@ export async function startLevel(lvls = currentLevels, levelIndex = currentLevel
   // Run tutorial if enabled
   if (lvl.tutorial && tutorialsActive) {
     await runTutorial(lvl.tutorial);
-  }
+  }  
+}
 
-  // Re‐enable the renderer
-  setAnimating(true);
+function endAllIntros() {
+  // Remove existing overlays if still around
+  const t = document.getElementById('tutorialOverlay');
+  if (t) t.remove();
+  const b = document.getElementById('briefingOverlay');
+  if (b) b.remove();
+
+  // Hide the shared controls bar
+  if (staticControls) hideStaticControls();
+
+  // Fire skip events so any listeners resolve and clean themselves up
+  window.dispatchEvent(new Event('tutorial:skip'));
+  window.dispatchEvent(new Event('briefing:skip'));
 }
 
 
@@ -1050,20 +1091,36 @@ async function runTutorial(steps) {
   for (const step of steps) {
     if (skipAll) break;
 
-    // —— NEW: pause-until step —— 
     if (step.pauseUntil) {
       // hide tutorial UI completely
       hideStaticControls();
       overlay.classList.add('hidden');
       grid.classList.remove('tutorial-restrict');
-      // wait for the event
-      await new Promise(resolve => {
-        const handler = () => {
-          window.removeEventListener(step.pauseUntil, handler);
+
+      // wait either for the event OR for a skip
+      await new Promise((resolve) => {
+        let done = false;
+
+        const onEvent = () => {
+          if (done) return;
+          done = true;
+          window.removeEventListener(step.pauseUntil, onEvent);
+          window.removeEventListener('tutorial:skip', onSkip);
           resolve();
         };
-        window.addEventListener(step.pauseUntil, handler);
+
+        const onSkip = () => {
+          if (done) return;
+          done = true;
+          window.removeEventListener(step.pauseUntil, onEvent);
+          window.removeEventListener('tutorial:skip', onSkip);
+          resolve();
+        };
+
+        window.addEventListener(step.pauseUntil, onEvent);
+        window.addEventListener('tutorial:skip', onSkip);
       });
+
       // restore tutorial UI (but leave grid unlocked)
       showStaticControls('tutorial');
       overlay.classList.remove('hidden');
