@@ -285,180 +285,180 @@ export const levels = [
 
 
 
-// --- Portal Puzzles (10×10) ---
-{
-  name: "Level 6 – Portal Pairs",
-  description: "Two linked portals across a wide chasm—aim carefully.",
-  maxMirrors: 2,
-  layout: (() => {
-    const G = Array.from({ length: 10 }, (_, r) => Array(10).fill('.'));
-    // border
-    G.forEach((row, r) => row.forEach((_, c) => { if (r===0||r===9||c===0||c===9) G[r][c]='#'; }));
-    G[1][1] = 'S-R';
-    G[4][3] = 'P-A'; G[4][6] = 'P-A';
-    G[8][8] = 'T';
-    return G;
-  })()
-},
-{
-  name: "Level 7 – Double Trouble",
-  description: "Combine portals and a mirror to thread the path.",
-  maxMirrors: 3,
-  layout: (() => {
-    const G = Array.from({ length: 10 }, () => Array(10).fill('.'));
-    G.forEach((row,r)=>row.forEach((_,c)=>{ if(r<1||r>8||c<1||c>8) G[r][c]='#'; }));
-    G[1][1] = 'S-R';
-    G[3][4] = 'P-A'; G[6][7] = 'P-A';
-    G[8][8] = 'T';
-    return G;
-  })()
-},
+// // --- Portal Puzzles (10×10) ---
+// {
+//   name: "Level 6 – Portal Pairs",
+//   description: "Two linked portals across a wide chasm—aim carefully.",
+//   maxMirrors: 2,
+//   layout: (() => {
+//     const G = Array.from({ length: 10 }, (_, r) => Array(10).fill('.'));
+//     // border
+//     G.forEach((row, r) => row.forEach((_, c) => { if (r===0||r===9||c===0||c===9) G[r][c]='#'; }));
+//     G[1][1] = 'S-R';
+//     G[4][3] = 'P-A'; G[4][6] = 'P-A';
+//     G[8][8] = 'T';
+//     return G;
+//   })()
+// },
+// {
+//   name: "Level 7 – Double Trouble",
+//   description: "Combine portals and a mirror to thread the path.",
+//   maxMirrors: 3,
+//   layout: (() => {
+//     const G = Array.from({ length: 10 }, () => Array(10).fill('.'));
+//     G.forEach((row,r)=>row.forEach((_,c)=>{ if(r<1||r>8||c<1||c>8) G[r][c]='#'; }));
+//     G[1][1] = 'S-R';
+//     G[3][4] = 'P-A'; G[6][7] = 'P-A';
+//     G[8][8] = 'T';
+//     return G;
+//   })()
+// },
 
-// --- Alarm Tutorial (small grid) ---
-{
-  name: "Level 8 – Alarm Awareness",
-  description: "Alarms start a countdown—beat the clock or bust!",
-  maxMirrors: Infinity,
-  layout: [
-    ['#','#','#','#','#','#','#'],
-    ['#','.','.','S-R','.','.','#'],
-    ['#','.','#','#','#','.','#'],
-    ['#','.','.','.','A-10','.','#'],
-    ['#','.','#','#','#','.','#'],
-    ['#','.','.','T','.','.','#'],
-    ['#','#','#','#','#','#','#']
-  ],
-  briefing: [
-    "This cell is an alarm—it starts a timer when hit.",
-    "Make it to the target before time runs out!"
-  ],
-  tutorial: [
-    { selector: '.cell[data-type="alarm"]', text: "This is an alarm cell. It begins counting down your time." },
-    { selector: '.cell[data-row="3"][data-col="4"]', text: "Click it to start the timer and see the countdown.", waitFor: "tutorial:alarm-start", allow: ['.cell[data-row="3"][data-col="4"]'] }
-  ]
-},
+// // --- Alarm Tutorial (small grid) ---
+// {
+//   name: "Level 8 – Alarm Awareness",
+//   description: "Alarms start a countdown—beat the clock or bust!",
+//   maxMirrors: Infinity,
+//   layout: [
+//     ['#','#','#','#','#','#','#'],
+//     ['#','.','.','S-R','.','.','#'],
+//     ['#','.','#','#','#','.','#'],
+//     ['#','.','.','.','A-10','.','#'],
+//     ['#','.','#','#','#','.','#'],
+//     ['#','.','.','T','.','.','#'],
+//     ['#','#','#','#','#','#','#']
+//   ],
+//   briefing: [
+//     "This cell is an alarm—it starts a timer when hit.",
+//     "Make it to the target before time runs out!"
+//   ],
+//   tutorial: [
+//     { selector: '.cell[data-type="alarm"]', text: "This is an alarm cell. It begins counting down your time." },
+//     { selector: '.cell[data-row="3"][data-col="4"]', text: "Click it to start the timer and see the countdown.", waitFor: "tutorial:alarm-start", allow: ['.cell[data-row="3"][data-col="4"]'] }
+//   ]
+// },
 
-// --- Alarm Puzzles (10×10) ---
-{
-  name: "Level 9 – Ticking Corridor",
-  description: "Bounce down the hallway before the alarm goes off.",
-  maxMirrors: 2,
-  layout: (() => {
-    const G = Array.from({ length: 10 }, () => Array(10).fill('.'));
-    G.forEach((row,r)=>row.forEach((_,c)=>{ if(r===0||r===9||c===0||c===9) G[r][c]='#'; }));
-    G[1][1] = 'S-R';
-    G[1][8] = 'A-8';
-    G[8][8] = 'T';
-    return G;
-  })()
-},
-{
-  name: "Level 10 – Race the Clock",
-  description: "Two alarms at different times—plan your route.",
-  maxMirrors: 3,
-  layout: (() => {
-    const G = Array.from({ length: 12 }, () => Array(12).fill('.'));
-    G.forEach((row,r)=>row.forEach((_,c)=>{ if(r===0||r===11||c===0||c===11) G[r][c]='#'; }));
-    G[1][1] = 'S-R';
-    G[2][8] = 'A-5';
-    G[8][3] = 'A-10';
-    G[10][10] = 'T';
-    return G;
-  })()
-},
+// // --- Alarm Puzzles (10×10) ---
+// {
+//   name: "Level 9 – Ticking Corridor",
+//   description: "Bounce down the hallway before the alarm goes off.",
+//   maxMirrors: 2,
+//   layout: (() => {
+//     const G = Array.from({ length: 10 }, () => Array(10).fill('.'));
+//     G.forEach((row,r)=>row.forEach((_,c)=>{ if(r===0||r===9||c===0||c===9) G[r][c]='#'; }));
+//     G[1][1] = 'S-R';
+//     G[1][8] = 'A-8';
+//     G[8][8] = 'T';
+//     return G;
+//   })()
+// },
+// {
+//   name: "Level 10 – Race the Clock",
+//   description: "Two alarms at different times—plan your route.",
+//   maxMirrors: 3,
+//   layout: (() => {
+//     const G = Array.from({ length: 12 }, () => Array(12).fill('.'));
+//     G.forEach((row,r)=>row.forEach((_,c)=>{ if(r===0||r===11||c===0||c===11) G[r][c]='#'; }));
+//     G[1][1] = 'S-R';
+//     G[2][8] = 'A-5';
+//     G[8][3] = 'A-10';
+//     G[10][10] = 'T';
+//     return G;
+//   })()
+// },
 
-// --- Converter Tutorial (small grid) ---
-{
-  name: "Level 11 – Colour Me Impressed",
-  description: "Converters turn your beam colored—only matching targets count!",
-  maxMirrors: Infinity,
-  layout: [
-    ['#','#','#','#','#'],
-    ['#','S-R','C-R','T-R','#'],
-    ['#','.','.','.','#'],
-    ['#','#','#','#','#']
-  ],
-  briefing: [
-    "Converters recolor your beam. Only targets of the same color will register."
-  ],
-  tutorial: [
-    { selector: '.cell[data-type="converter"]', text: "This converter turns your beam red." },
-    { selector: '.cell[data-row="1"][data-col="2"]', text: "Run your beam through this before hitting the red target.", waitFor: "tutorial:placement-complete" }
-  ]
-},
+// // --- Converter Tutorial (small grid) ---
+// {
+//   name: "Level 11 – Colour Me Impressed",
+//   description: "Converters turn your beam colored—only matching targets count!",
+//   maxMirrors: Infinity,
+//   layout: [
+//     ['#','#','#','#','#'],
+//     ['#','S-R','C-R','T-R','#'],
+//     ['#','.','.','.','#'],
+//     ['#','#','#','#','#']
+//   ],
+//   briefing: [
+//     "Converters recolor your beam. Only targets of the same color will register."
+//   ],
+//   tutorial: [
+//     { selector: '.cell[data-type="converter"]', text: "This converter turns your beam red." },
+//     { selector: '.cell[data-row="1"][data-col="2"]', text: "Run your beam through this before hitting the red target.", waitFor: "tutorial:placement-complete" }
+//   ]
+// },
 
-// --- Converter Puzzles (10×10) ---
-{
-  name: "Level 12 – RGB Relay",
-  description: "Three converters in sequence—find the right order to reach the target.",
-  maxMirrors: 2,
-  layout: (() => {
-    const G=Array(10).fill().map(()=>Array(10).fill('.'));
-    G.forEach((row,r)=>row.forEach((_,c)=>{ if(r===0||r===9||c===0||c===9) G[r][c]='#'; }));
-    G[1][1]='S-R';
-    ['R','G','B'].forEach((col,i)=> G[3][2+i*2] = `C-${col}`);
-    G[5][6]='T';
-    return G;
-  })()
-},
-{
-  name: "Level 13 – Polychrome Path",
-  description: "Mix two colors to hit the dual target.",
-  maxMirrors: 3,
-  layout: (() => {
-    const G=Array(11).fill().map(()=>Array(11).fill('.'));
-    G.forEach((row,r)=>row.forEach((_,c)=>{ if(r===0||r===10||c===0||c===10) G[r][c]='#'; }));
-    G[1][1]='S-R'; G[1][4]='C-R';
-    G[4][7]='C-B';
-    G[8][8]='T';
-    return G;
-  })()
-},
+// // --- Converter Puzzles (10×10) ---
+// {
+//   name: "Level 12 – RGB Relay",
+//   description: "Three converters in sequence—find the right order to reach the target.",
+//   maxMirrors: 2,
+//   layout: (() => {
+//     const G=Array(10).fill().map(()=>Array(10).fill('.'));
+//     G.forEach((row,r)=>row.forEach((_,c)=>{ if(r===0||r===9||c===0||c===9) G[r][c]='#'; }));
+//     G[1][1]='S-R';
+//     ['R','G','B'].forEach((col,i)=> G[3][2+i*2] = `C-${col}`);
+//     G[5][6]='T';
+//     return G;
+//   })()
+// },
+// {
+//   name: "Level 13 – Polychrome Path",
+//   description: "Mix two colors to hit the dual target.",
+//   maxMirrors: 3,
+//   layout: (() => {
+//     const G=Array(11).fill().map(()=>Array(11).fill('.'));
+//     G.forEach((row,r)=>row.forEach((_,c)=>{ if(r===0||r===10||c===0||c===10) G[r][c]='#'; }));
+//     G[1][1]='S-R'; G[1][4]='C-R';
+//     G[4][7]='C-B';
+//     G[8][8]='T';
+//     return G;
+//   })()
+// },
 
-// --- Filter Tutorial (small grid) ---
-{
-  name: "Level 14 – Filter Fundamentals",
-  description: "Filters only pass one color—block the rest.",
-  maxMirrors: Infinity,
-  layout: [
-    ['#','#','#','#','#'],
-    ['#','C-G','F-G','T-G','#'],
-    ['#','.','.','.','#'],
-    ['#','#','#','#','#']
-  ],
-  briefing: [
-    "Filters only allow their matching color through. Others are stopped dead."
-  ],
-  tutorial: [
-    { selector: '.cell[data-type="filter"]', text: "This filter only lets green beams pass." },
-    { selector: '.cell[data-row="1"][data-col="2"]', text: "Place it after the converter to remove unwanted colors.", waitFor: "tutorial:placement-complete" }
-  ]
-},
+// // --- Filter Tutorial (small grid) ---
+// {
+//   name: "Level 14 – Filter Fundamentals",
+//   description: "Filters only pass one color—block the rest.",
+//   maxMirrors: Infinity,
+//   layout: [
+//     ['#','#','#','#','#'],
+//     ['#','C-G','F-G','T-G','#'],
+//     ['#','.','.','.','#'],
+//     ['#','#','#','#','#']
+//   ],
+//   briefing: [
+//     "Filters only allow their matching color through. Others are stopped dead."
+//   ],
+//   tutorial: [
+//     { selector: '.cell[data-type="filter"]', text: "This filter only lets green beams pass." },
+//     { selector: '.cell[data-row="1"][data-col="2"]', text: "Place it after the converter to remove unwanted colors.", waitFor: "tutorial:placement-complete" }
+//   ]
+// },
 
-// --- Filter Puzzles (10×10+) ---
-{
-  name: "Level 15 – Spectrum Split",
-  description: "Plan a converter→filter→target chain under pressure.",
-  maxMirrors: 2,
-  layout: (() => {
-    const G=Array(10).fill().map(()=>Array(14).fill('.'));
-    G.forEach((row,r)=>row.forEach((_,c)=>{ if(r===0||r===9||c===0||c===13) G[r][c]='#'; }));
-    G[1][1]='S-R'; G[1][4]='C-G'; G[1][7]='F-G'; G[1][10]='T-G';
-    return G;
-  })()
-},
-{
-  name: "Level 16 – Gauntlet of Shades",
-  description: "Multiple filters force you to switch colors mid-flight.",
-  maxMirrors: 4,
-  layout: (() => {
-    const G=Array(12).fill().map(()=>Array(16).fill('.'));
-    G.forEach((row,r)=>row.forEach((_,c)=>{ if(r===0||r===11||c===0||c===15) G[r][c]='#'; }));
-    G[2][2]='S-R'; G[2][5]='C-R'; G[2][8]='F-R';
-    G[5][11]='C-B'; G[5][13]='F-B'; G[8][14]='T-B';
-    return G;
-  })()
-}
-// End of campaign levels
+// // --- Filter Puzzles (10×10+) ---
+// {
+//   name: "Level 15 – Spectrum Split",
+//   description: "Plan a converter→filter→target chain under pressure.",
+//   maxMirrors: 2,
+//   layout: (() => {
+//     const G=Array(10).fill().map(()=>Array(14).fill('.'));
+//     G.forEach((row,r)=>row.forEach((_,c)=>{ if(r===0||r===9||c===0||c===13) G[r][c]='#'; }));
+//     G[1][1]='S-R'; G[1][4]='C-G'; G[1][7]='F-G'; G[1][10]='T-G';
+//     return G;
+//   })()
+// },
+// {
+//   name: "Level 16 – Gauntlet of Shades",
+//   description: "Multiple filters force you to switch colors mid-flight.",
+//   maxMirrors: 4,
+//   layout: (() => {
+//     const G=Array(12).fill().map(()=>Array(16).fill('.'));
+//     G.forEach((row,r)=>row.forEach((_,c)=>{ if(r===0||r===11||c===0||c===15) G[r][c]='#'; }));
+//     G[2][2]='S-R'; G[2][5]='C-R'; G[2][8]='F-R';
+//     G[5][11]='C-B'; G[5][13]='F-B'; G[8][14]='T-B';
+//     return G;
+//   })()
+// }
+// // End of campaign levels
 
 ];

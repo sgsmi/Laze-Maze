@@ -495,7 +495,7 @@
 }
 
 #pauseBtn {
-  z-index: 102; /* sit above the board */
+  z-index: 100; /* sit above the board */
 }
 
 /* Pause Menu tabs */
